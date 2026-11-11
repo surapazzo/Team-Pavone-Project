@@ -23,6 +23,8 @@ import {
   CheckInSchedulerConfig,
   CheckInEmailDispatchLog,
   CheckInSchedulerTriggerType,
+  ExerciseLibraryItem,
+  ExerciseItem,
 } from '../types';
 import {
   INITIAL_THEME,
@@ -35,6 +37,7 @@ import {
   INITIAL_WORKOUT_PROGRAMS,
   INITIAL_CHECKINS,
   INITIAL_STRIPE_DATA,
+  INITIAL_EXERCISE_LIBRARY,
 } from '../data/initialData';
 import { exportAthleteDataAsJson, exportAthleteLogsAsCsv } from '../services/securityAndGdpr';
 import {
@@ -91,6 +94,13 @@ interface AppContextType {
   submitWeeklyCheckin: (checkin: Omit<WeeklyCheckIn, 'id' | 'submission_date' | 'review_status'>) => Promise<WeeklyCheckIn>;
   reviewCheckin: (checkinId: string, feedback: string) => void;
   saveWorkoutProgram: (program: WorkoutProgram) => void;
+  addExerciseToProgram: (programId: string, exercise: ExerciseItem) => void;
+
+  // Exercise Library & Builder
+  exerciseLibrary: ExerciseLibraryItem[];
+  addExerciseToLibrary: (item: Omit<ExerciseLibraryItem, 'id' | 'updated_at'>) => ExerciseLibraryItem;
+  updateExerciseInLibrary: (id: string, updated: Partial<ExerciseLibraryItem>) => void;
+  deleteExerciseFromLibrary: (id: string) => void;
 
   // Check-In Email Scheduler
   schedulerConfig: CheckInSchedulerConfig;
@@ -208,7 +218,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Macrocycle
   const [macrocycleWeeks, setMacrocycleWeeks] = useState<MacrocycleWeek[]>(() => {
     const saved = localStorage.getItem('ttp_macrocycle');
-    return saved ? JSON.parse(saved) : INITIAL_MACROCYCLE_WEEKS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length >= INITIAL_MACROCYCLE_WEEKS.length) {
+          return parsed;
+        }
+      } catch {
+        // fallback
+      }
+    }
+    return INITIAL_MACROCYCLE_WEEKS;
   });
 
   // Calendar Events
@@ -221,6 +241,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [workoutPrograms, setWorkoutPrograms] = useState<WorkoutProgram[]>(() => {
     const saved = localStorage.getItem('ttp_workouts');
     return saved ? JSON.parse(saved) : INITIAL_WORKOUT_PROGRAMS;
+  });
+
+  // Master Exercise Library (Francesco Pavone Catalog)
+  const [exerciseLibrary, setExerciseLibrary] = useState<ExerciseLibraryItem[]>(() => {
+    const saved = localStorage.getItem('ttp_exercise_library');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        // fallback
+      }
+    }
+    return INITIAL_EXERCISE_LIBRARY;
   });
 
   // Weekly Check-Ins
@@ -677,11 +710,64 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (idx >= 0) {
         const copy = [...prev];
         copy[idx] = program;
+        localStorage.setItem('ttp_workouts', JSON.stringify(copy));
         return copy;
       }
-      return [...prev, program];
+      const updated = [...prev, program];
+      localStorage.setItem('ttp_workouts', JSON.stringify(updated));
+      return updated;
     });
     addAuditLog('WORKOUT_PROGRAM_SAVED', 'INFO', { title: program.title });
+  };
+
+  const addExerciseToProgram = (programId: string, exercise: ExerciseItem) => {
+    setWorkoutPrograms((prev) => {
+      const idx = prev.findIndex((p) => p.id === programId);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = {
+          ...copy[idx],
+          exercises: [...copy[idx].exercises, exercise],
+        };
+        localStorage.setItem('ttp_workouts', JSON.stringify(copy));
+        return copy;
+      }
+      return prev;
+    });
+    addAuditLog('EXERCISE_ADDED_TO_PROGRAM', 'INFO', { programId, exerciseName: exercise.name });
+  };
+
+  const addExerciseToLibrary = (item: Omit<ExerciseLibraryItem, 'id' | 'updated_at'>): ExerciseLibraryItem => {
+    const newEx: ExerciseLibraryItem = {
+      ...item,
+      id: `lib-ex-${Date.now()}`,
+      updated_at: new Date().toISOString(),
+    };
+    setExerciseLibrary((prev) => {
+      const updated = [newEx, ...prev];
+      localStorage.setItem('ttp_exercise_library', JSON.stringify(updated));
+      return updated;
+    });
+    addAuditLog('EXERCISE_LIBRARY_CREATED', 'INFO', { name: newEx.name, muscle_group: newEx.muscle_group });
+    return newEx;
+  };
+
+  const updateExerciseInLibrary = (id: string, updated: Partial<ExerciseLibraryItem>) => {
+    setExerciseLibrary((prev) => {
+      const copy = prev.map((ex) => (ex.id === id ? { ...ex, ...updated, updated_at: new Date().toISOString() } : ex));
+      localStorage.setItem('ttp_exercise_library', JSON.stringify(copy));
+      return copy;
+    });
+    addAuditLog('EXERCISE_LIBRARY_UPDATED', 'INFO', { id, ...updated });
+  };
+
+  const deleteExerciseFromLibrary = (id: string) => {
+    setExerciseLibrary((prev) => {
+      const filtered = prev.filter((ex) => ex.id !== id);
+      localStorage.setItem('ttp_exercise_library', JSON.stringify(filtered));
+      return filtered;
+    });
+    addAuditLog('EXERCISE_LIBRARY_DELETED', 'INFO', { id });
   };
 
   const acceptGdprConsent = (athleteId: string) => {
@@ -791,6 +877,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         submitWeeklyCheckin,
         reviewCheckin,
         saveWorkoutProgram,
+        addExerciseToProgram,
+        exerciseLibrary,
+        addExerciseToLibrary,
+        updateExerciseInLibrary,
+        deleteExerciseFromLibrary,
         acceptGdprConsent,
         eraseAllAthleteData,
         exportAthleteData,

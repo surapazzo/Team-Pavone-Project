@@ -159,15 +159,51 @@ export interface CalendarEvent {
   notes?: string;
 }
 
+export type MuscleGroup =
+  | 'PETTORALI'
+  | 'DORSALI'
+  | 'SPALLE'
+  | 'QUADRICIPITI'
+  | 'FEMORALI_GLUTEI'
+  | 'BICIPITI'
+  | 'TRICIPITI'
+  | 'CORE_ADDOME'
+  | 'POLPACCI';
+
+export type EquipmentType =
+  | 'BILANCIERE'
+  | 'MANUBRI'
+  | 'CAVI'
+  | 'MACCHINARIO'
+  | 'CORPO_LIBERO';
+
+export interface ExerciseLibraryItem {
+  id: string;
+  name: string;
+  muscle_group: MuscleGroup;
+  equipment: EquipmentType;
+  description: string;
+  key_points: string[];
+  video_url: string; // YouTube embed or custom URL
+  default_sets: number;
+  default_reps: string;
+  default_rir: number;
+  default_rest_sec: number;
+  created_by?: string;
+  updated_at?: string;
+}
+
 export interface ExerciseItem {
   id: string;
   name: string;
+  muscle_group?: MuscleGroup;
   sets: number;
   reps: string;
   rir: number; // Reps In Reserve
   rest_sec: number;
   notes?: string;
   video_url?: string;
+  library_exercise_id?: string;
 }
 
 export interface WorkoutProgram {

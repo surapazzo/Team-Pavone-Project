@@ -55,9 +55,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onOpenCmsModa
     },
     {
       route: '/app/workouts',
-      label: 'Schede & Nutrizione',
+      label: 'Schede & Esercizi',
       icon: Dumbbell,
-      badge: 'Video & Macros',
+      badge: isCoach ? 'Costruttore & Video' : 'Libreria & Schede',
     },
     {
       route: '/app/check-in',
