@@ -2,5 +2,7 @@
   "name": "Progetto Team Pavone",
   "description": "Ecosistema di coaching scientifico e bodybuilding di Francesco Pavone con area sicura polimorfica, check-in in 7 aree, sincronizzazione Garmin .FIT e macrociclo avanzato.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

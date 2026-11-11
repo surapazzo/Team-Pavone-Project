@@ -160,12 +160,14 @@ export function calculate7DayMovingAverages(logs: DailyLog[]) {
   const weights = last7.filter((l) => l.weight_kg > 0).map((l) => l.weight_kg);
   const calories = last7.filter((l) => l.calories_kcal > 0).map((l) => l.calories_kcal);
   const steps = last7.filter((l) => l.steps > 0).map((l) => l.steps);
+  const sleep = last7.filter((l) => l.sleep_hours > 0).map((l) => l.sleep_hours);
   const workouts = last7.filter((l) => l.workout_completed).length;
 
   return {
     avgWeight: weights.length > 0 ? Number((weights.reduce((a, b) => a + b, 0) / weights.length).toFixed(2)) : 0,
     avgCalories: calories.length > 0 ? Math.round(calories.reduce((a, b) => a + b, 0) / calories.length) : 0,
     avgSteps: steps.length > 0 ? Math.round(steps.reduce((a, b) => a + b, 0) / steps.length) : 0,
+    avgSleep: sleep.length > 0 ? Number((sleep.reduce((a, b) => a + b, 0) / sleep.length).toFixed(1)) : 8.0,
     totalWorkouts: workouts,
     daysCount: last7.length,
   };

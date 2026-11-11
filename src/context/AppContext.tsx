@@ -18,6 +18,11 @@ import {
   GdprConsentRecord,
   SecurityAuditLog,
   StripeSubscriptionData,
+  GarminSleepLog,
+  CookiePreferences,
+  CheckInSchedulerConfig,
+  CheckInEmailDispatchLog,
+  CheckInSchedulerTriggerType,
 } from '../types';
 import {
   INITIAL_THEME,
@@ -32,6 +37,12 @@ import {
   INITIAL_STRIPE_DATA,
 } from '../data/initialData';
 import { exportAthleteDataAsJson, exportAthleteLogsAsCsv } from '../services/securityAndGdpr';
+import {
+  DEFAULT_SCHEDULER_CONFIG,
+  INITIAL_DISPATCH_LOGS,
+  calculateNextRunDate,
+  executeSchedulerDispatch,
+} from '../services/checkInEmailSchedulerService';
 
 interface AppContextType {
   currentUser: UserProfile;
@@ -42,6 +53,7 @@ interface AppContextType {
   landingContent: LandingContent;
   dailyLogs: DailyLog[];
   garminActivities: GarminFitActivity[];
+  garminSleepLogs: GarminSleepLog[];
   macrocycleWeeks: MacrocycleWeek[];
   calendarEvents: CalendarEvent[];
   workoutPrograms: WorkoutProgram[];
@@ -49,6 +61,8 @@ interface AppContextType {
   stripeData: StripeSubscriptionData;
   gdprConsents: GdprConsentRecord[];
   auditLogs: SecurityAuditLog[];
+  cookiePreferences: CookiePreferences;
+  isCookieModalOpen: boolean;
   currentRoute: string;
   isPreMergeGateOpen: boolean;
   isThemeEditorOpen: boolean;
@@ -59,18 +73,32 @@ interface AppContextType {
   setSelectedAthleteId: (id: string) => void;
   setIsPreMergeGateOpen: (open: boolean) => void;
   setIsThemeEditorOpen: (open: boolean) => void;
+  setIsCookieModalOpen: (open: boolean) => void;
+  loginWithGoogle: (googleUser?: { email: string; name: string; avatarUrl?: string }) => void;
+  logout: () => void;
 
   // Domain Actions
   updateTheme: (updated: Partial<ThemeConfig>) => void;
   updateLandingContent: (updated: Partial<LandingContent>) => void;
+  updateCookiePreferences: (prefs: Partial<CookiePreferences>) => void;
   addDailyLog: (log: Omit<DailyLog, 'id'>) => void;
+  bulkImportDailyLogs: (logs: DailyLog[]) => { importedCount: number; updatedCount: number };
   importGarminFitActivity: (activity: Omit<GarminFitActivity, 'id' | 'imported_at'>) => void;
+  importGarminSleepActivity: (sleepLog: Omit<GarminSleepLog, 'id' | 'imported_at'>) => void;
   updateMacrocycleWeek: (weekId: string, updated: Partial<MacrocycleWeek>) => void;
   addCalendarEvent: (event: Omit<CalendarEvent, 'id'>) => void;
   deleteCalendarEvent: (id: string) => void;
   submitWeeklyCheckin: (checkin: Omit<WeeklyCheckIn, 'id' | 'submission_date' | 'review_status'>) => Promise<WeeklyCheckIn>;
   reviewCheckin: (checkinId: string, feedback: string) => void;
   saveWorkoutProgram: (program: WorkoutProgram) => void;
+
+  // Check-In Email Scheduler
+  schedulerConfig: CheckInSchedulerConfig;
+  emailDispatchLogs: CheckInEmailDispatchLog[];
+  isEmailSchedulerModalOpen: boolean;
+  setIsEmailSchedulerModalOpen: (open: boolean) => void;
+  updateSchedulerConfig: (updated: Partial<CheckInSchedulerConfig>) => void;
+  triggerCheckInEmailDispatch: (checkinId?: string, triggerType?: CheckInSchedulerTriggerType) => Promise<CheckInEmailDispatchLog | null>;
 
   // GDPR Actions
   acceptGdprConsent: (athleteId: string) => void;
@@ -98,16 +126,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Selected athlete for Coach perspective
   const selectedAthlete = athletes.find((a) => a.id === selectedAthleteId) || athletes[0];
 
-  // Theme
+  // Theme with official Team Pavone branding
   const [theme, setTheme] = useState<ThemeConfig>(() => {
     const saved = localStorage.getItem('ttp_theme');
-    return saved ? JSON.parse(saved) : INITIAL_THEME;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (!parsed.logo_url || parsed.logo_url.includes('unsplash') || parsed.logo_url === '') {
+          parsed.logo_url = INITIAL_THEME.logo_url;
+        }
+        return parsed;
+      } catch {
+        return INITIAL_THEME;
+      }
+    }
+    return INITIAL_THEME;
   });
 
-  // Landing CMS Content
+  // Landing CMS Content with teampavone.com assets
   const [landingContent, setLandingContent] = useState<LandingContent>(() => {
     const saved = localStorage.getItem('ttp_landing_content');
-    return saved ? JSON.parse(saved) : INITIAL_LANDING_CONTENT;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Migrate stale or unsplash placeholders to authentic teampavone.com photos
+        if (!parsed.hero_image_url || parsed.hero_image_url.includes('unsplash')) {
+          parsed.hero_image_url = INITIAL_LANDING_CONTENT.hero_image_url;
+        }
+        if (!parsed.coach_portrait_url || parsed.coach_portrait_url.includes('unsplash')) {
+          parsed.coach_portrait_url = INITIAL_LANDING_CONTENT.coach_portrait_url;
+        }
+        if (!parsed.testimonials || parsed.testimonials.length < 6 || (parsed.testimonials[0]?.before_after_url && parsed.testimonials[0].before_after_url.includes('unsplash'))) {
+          parsed.testimonials = INITIAL_LANDING_CONTENT.testimonials;
+        }
+        return parsed;
+      } catch {
+        return INITIAL_LANDING_CONTENT;
+      }
+    }
+    return INITIAL_LANDING_CONTENT;
   });
 
   // Daily Logs
@@ -121,6 +178,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const saved = localStorage.getItem('ttp_garmin_activities');
     return saved ? JSON.parse(saved) : [];
   });
+
+  // Garmin Sleep Logs
+  const [garminSleepLogs, setGarminSleepLogs] = useState<GarminSleepLog[]>(() => {
+    const saved = localStorage.getItem('ttp_garmin_sleep_logs');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Cookie Consent & Preferences
+  const [cookiePreferences, setCookiePreferences] = useState<CookiePreferences>(() => {
+    const saved = localStorage.getItem('ttp_cookie_consent');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        // fallback
+      }
+    }
+    return {
+      necessary: true,
+      preferences: true,
+      analytics: false,
+      timestamp: '',
+      hasConsented: false,
+    };
+  });
+  const [isCookieModalOpen, setIsCookieModalOpen] = useState(false);
 
   // Macrocycle
   const [macrocycleWeeks, setMacrocycleWeeks] = useState<MacrocycleWeek[]>(() => {
@@ -171,6 +254,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       created_at: new Date(Date.now() - 3600000).toISOString(),
     },
   ]);
+
+  // Check-In Email Scheduler State
+  const [schedulerConfig, setSchedulerConfig] = useState<CheckInSchedulerConfig>(() => {
+    const saved = localStorage.getItem('ttp_checkin_scheduler');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        // fallback
+      }
+    }
+    return DEFAULT_SCHEDULER_CONFIG;
+  });
+
+  const [emailDispatchLogs, setEmailDispatchLogs] = useState<CheckInEmailDispatchLog[]>(() => {
+    const saved = localStorage.getItem('ttp_checkin_email_logs');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        // fallback
+      }
+    }
+    return INITIAL_DISPATCH_LOGS;
+  });
+
+  const [isEmailSchedulerModalOpen, setIsEmailSchedulerModalOpen] = useState(false);
 
   // Modals
   const [isPreMergeGateOpen, setIsPreMergeGateOpen] = useState(false);
@@ -268,6 +378,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addAuditLog('DAILY_LOG_UPSERTED', 'INFO', { date: logData.log_date, athlete_id: logData.athlete_id });
   };
 
+  const bulkImportDailyLogs = (logs: DailyLog[]) => {
+    let importedCount = 0;
+    let updatedCount = 0;
+
+    setDailyLogs((prev) => {
+      const copy = [...prev];
+      logs.forEach((newLog) => {
+        const existingIdx = copy.findIndex(
+          (l) => l.athlete_id === newLog.athlete_id && l.log_date === newLog.log_date
+        );
+        if (existingIdx >= 0) {
+          copy[existingIdx] = {
+            ...copy[existingIdx],
+            ...newLog,
+            // preserve existing non-zero values if new values are zero
+            weight_kg: newLog.weight_kg > 0 ? newLog.weight_kg : copy[existingIdx].weight_kg,
+            calories_kcal: newLog.calories_kcal > 0 ? newLog.calories_kcal : copy[existingIdx].calories_kcal,
+            steps: newLog.steps > 0 ? newLog.steps : copy[existingIdx].steps,
+          };
+          updatedCount++;
+        } else {
+          copy.push(newLog);
+          importedCount++;
+        }
+      });
+      return copy;
+    });
+
+    addAuditLog('EXCEL_BULK_LOGS_IMPORTED', 'INFO', {
+      total: logs.length,
+      imported: importedCount,
+      updated: updatedCount,
+    });
+
+    return { importedCount, updatedCount };
+  };
+
   const importGarminFitActivity = (activityData: Omit<GarminFitActivity, 'id' | 'imported_at'>) => {
     const newAct: GarminFitActivity = {
       id: `garmin-${Date.now()}`,
@@ -295,6 +442,115 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const importGarminSleepActivity = (sleepData: Omit<GarminSleepLog, 'id' | 'imported_at'>) => {
+    const newSleep: GarminSleepLog = {
+      id: `sleep-${Date.now()}`,
+      imported_at: new Date().toISOString(),
+      ...sleepData,
+    };
+    setGarminSleepLogs((prev) => {
+      const updated = [newSleep, ...prev];
+      localStorage.setItem('ttp_garmin_sleep_logs', JSON.stringify(updated));
+      return updated;
+    });
+
+    // Automatically update or create daily_logs for this date
+    setDailyLogs((prev) => {
+      const existingIndex = prev.findIndex(
+        (l) => l.athlete_id === sleepData.athlete_id && l.log_date === sleepData.sleep_date
+      );
+      if (existingIndex >= 0) {
+        const copy = [...prev];
+        copy[existingIndex] = {
+          ...copy[existingIndex],
+          sleep_hours: sleepData.total_sleep_hours,
+          notes:
+            (copy[existingIndex].notes ? copy[existingIndex].notes + ' · ' : '') +
+            `Garmin Sleep Score: ${sleepData.sleep_score}/100 (${sleepData.quality_rating}), HRV ${sleepData.avg_hrv_ms}ms`,
+        };
+        localStorage.setItem('ttp_daily_logs', JSON.stringify(copy));
+        return copy;
+      } else {
+        const newLog: DailyLog = {
+          id: `log-${Date.now()}`,
+          athlete_id: sleepData.athlete_id,
+          log_date: sleepData.sleep_date,
+          weight_kg: 0,
+          calories_kcal: 2300,
+          steps: 10000,
+          sleep_hours: sleepData.total_sleep_hours,
+          workout_completed: false,
+          notes: `Garmin Sleep Score: ${sleepData.sleep_score}/100 (${sleepData.quality_rating}), HRV ${sleepData.avg_hrv_ms}ms`,
+        };
+        const updated = [...prev, newLog];
+        localStorage.setItem('ttp_daily_logs', JSON.stringify(updated));
+        return updated;
+      }
+    });
+
+    addAuditLog('GARMIN_FIT_SLEEP_IMPORTED', 'INFO', {
+      file: sleepData.file_name,
+      sleep_date: sleepData.sleep_date,
+      total_sleep_hours: sleepData.total_sleep_hours,
+      sleep_score: sleepData.sleep_score,
+      hrv_ms: sleepData.avg_hrv_ms,
+    });
+  };
+
+  const updateCookiePreferences = (prefs: Partial<CookiePreferences>) => {
+    setCookiePreferences((prev) => {
+      const updated: CookiePreferences = {
+        ...prev,
+        ...prefs,
+        necessary: true,
+        timestamp: new Date().toISOString(),
+        hasConsented: true,
+      };
+      localStorage.setItem('ttp_cookie_consent', JSON.stringify(updated));
+      return updated;
+    });
+    addAuditLog('COOKIE_CONSENT_UPDATED', 'INFO', prefs as Record<string, unknown>);
+  };
+
+  const loginWithGoogle = (googleUser?: { email: string; name: string; avatarUrl?: string }) => {
+    const emailToUse = googleUser?.email || 'surapazzo@gmail.com';
+    const nameToUse = googleUser?.name || 'Utente Google';
+
+    let loggedUser: UserProfile;
+    if (emailToUse.toLowerCase().includes('pavone') || emailToUse.toLowerCase().includes('coach')) {
+      loggedUser = COACH_USER;
+    } else {
+      const existing = athletes.find((a) => a.email.toLowerCase() === emailToUse.toLowerCase());
+      if (existing) {
+        loggedUser = existing;
+      } else {
+        loggedUser = {
+          id: `athlete-${Date.now()}`,
+          role: 'ATHLETE',
+          email: emailToUse,
+          full_name: nameToUse,
+          target_weight_kg: 78.0,
+          initial_weight_kg: 83.5,
+          experience_level: 'TWO_TO_FOUR_YEARS',
+          created_at: new Date().toISOString(),
+        };
+      }
+    }
+
+    setCurrentUser(loggedUser);
+    localStorage.setItem('ttp_role', loggedUser.role);
+    localStorage.setItem('ttp_user', JSON.stringify(loggedUser));
+    addAuditLog('AUTH_LOGIN_GOOGLE_SUCCESS', 'INFO', { email: emailToUse, name: nameToUse });
+    setCurrentRoute('/app/dashboard');
+  };
+
+  const logout = () => {
+    localStorage.removeItem('ttp_role');
+    localStorage.removeItem('ttp_user');
+    addAuditLog('AUTH_LOGOUT', 'INFO', { user_id: currentUser.id });
+    setCurrentRoute('/login');
+  };
+
   const updateMacrocycleWeek = (weekId: string, updated: Partial<MacrocycleWeek>) => {
     setMacrocycleWeeks((prev) =>
       prev.map((w) => (w.id === weekId ? { ...w, ...updated } : w))
@@ -316,6 +572,70 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addAuditLog('CALENDAR_EVENT_DELETED', 'INFO', { id });
   };
 
+  const updateSchedulerConfig = (updated: Partial<CheckInSchedulerConfig>) => {
+    setSchedulerConfig((prev) => {
+      const merged: CheckInSchedulerConfig = { ...prev, ...updated };
+      if (updated.day_of_week || updated.send_time) {
+        merged.next_scheduled_run = calculateNextRunDate(
+          merged.day_of_week,
+          merged.send_time
+        );
+      }
+      localStorage.setItem('ttp_checkin_scheduler', JSON.stringify(merged));
+      return merged;
+    });
+    addAuditLog('CHECKIN_SCHEDULER_CONFIG_UPDATED', 'INFO', updated as Record<string, unknown>);
+  };
+
+  const triggerCheckInEmailDispatch = async (
+    checkinId?: string,
+    triggerType: CheckInSchedulerTriggerType = 'MANUAL_DISPATCH'
+  ): Promise<CheckInEmailDispatchLog | null> => {
+    const targetCheckin = checkinId
+      ? weeklyCheckins.find((c) => c.id === checkinId)
+      : weeklyCheckins[0];
+
+    if (!targetCheckin) return null;
+
+    const targetAthlete =
+      athletes.find((a) => a.id === targetCheckin.athlete_id) || currentUser;
+
+    const latestSleep = garminSleepLogs.length > 0 ? garminSleepLogs[0] : null;
+
+    const dispatchLog = await executeSchedulerDispatch(
+      schedulerConfig,
+      targetCheckin,
+      targetAthlete,
+      triggerType,
+      latestSleep
+    );
+
+    setEmailDispatchLogs((prev) => {
+      const updated = [dispatchLog, ...prev];
+      localStorage.setItem('ttp_checkin_email_logs', JSON.stringify(updated));
+      return updated;
+    });
+
+    setSchedulerConfig((prev) => {
+      const updated = {
+        ...prev,
+        last_run_timestamp: new Date().toISOString(),
+        next_scheduled_run: calculateNextRunDate(prev.day_of_week, prev.send_time),
+      };
+      localStorage.setItem('ttp_checkin_scheduler', JSON.stringify(updated));
+      return updated;
+    });
+
+    addAuditLog('CHECKIN_EMAIL_DISPATCHED', 'INFO', {
+      dispatchId: dispatchLog.id,
+      recipient: dispatchLog.recipient_email,
+      triggerType,
+      latencyMs: dispatchLog.delivery_time_ms,
+    });
+
+    return dispatchLog;
+  };
+
   const submitWeeklyCheckin = async (
     checkinData: Omit<WeeklyCheckIn, 'id' | 'submission_date' | 'review_status'>
   ): Promise<WeeklyCheckIn> => {
@@ -333,6 +653,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       iso_week: checkinData.iso_week,
       weekly_rating: checkinData.weekly_rating,
     });
+
+    // Auto-dispatch scheduled report if enabled
+    if (schedulerConfig.enabled && schedulerConfig.send_report_to_coach) {
+      triggerCheckInEmailDispatch(newCheckin.id, 'CHECKIN_REPORT_SUBMISSION');
+    }
 
     return newCheckin;
   };
@@ -432,6 +757,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         landingContent,
         dailyLogs,
         garminActivities,
+        garminSleepLogs,
         macrocycleWeeks,
         calendarEvents,
         workoutPrograms,
@@ -439,6 +765,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         stripeData,
         gdprConsents,
         auditLogs,
+        cookiePreferences,
+        isCookieModalOpen,
         currentRoute,
         isPreMergeGateOpen,
         isThemeEditorOpen,
@@ -447,10 +775,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSelectedAthleteId,
         setIsPreMergeGateOpen,
         setIsThemeEditorOpen,
+        setIsCookieModalOpen,
+        loginWithGoogle,
+        logout,
         updateTheme,
         updateLandingContent,
+        updateCookiePreferences,
         addDailyLog,
+        bulkImportDailyLogs,
         importGarminFitActivity,
+        importGarminSleepActivity,
         updateMacrocycleWeek,
         addCalendarEvent,
         deleteCalendarEvent,
@@ -461,6 +795,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         eraseAllAthleteData,
         exportAthleteData,
         addAuditLog,
+        schedulerConfig,
+        emailDispatchLogs,
+        isEmailSchedulerModalOpen,
+        setIsEmailSchedulerModalOpen,
+        updateSchedulerConfig,
+        triggerCheckInEmailDispatch,
       }}
     >
       {children}

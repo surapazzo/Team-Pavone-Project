@@ -16,7 +16,10 @@ import {
   CheckCircle2,
   Sliders,
   ChevronDown,
+  Clock,
+  Mail,
 } from 'lucide-react';
+import { CheckInEmailSchedulerView } from './CheckInEmailSchedulerView';
 
 export const CoachCheckInReview: React.FC = () => {
   const {
@@ -42,8 +45,8 @@ export const CoachCheckInReview: React.FC = () => {
   const [coachFeedbackText, setCoachFeedbackText] = useState(() => activeCheckin?.coach_feedback || '');
   const [feedbackSaved, setFeedbackSaved] = useState(false);
 
-  // Survey Customizer Tab
-  const [activeTab, setActiveTab] = useState<'REVIEW' | 'CUSTOMIZE_SURVEY'>('REVIEW');
+  // Survey Customizer & Email Scheduler Tabs
+  const [activeTab, setActiveTab] = useState<'REVIEW' | 'CUSTOMIZE_SURVEY' | 'EMAIL_SCHEDULER'>('REVIEW');
   const [customQuestions, setCustomQuestions] = useState([
     { id: 'q1', text: 'Stai eseguendo la serie di riscaldamento specifica per le spalle?', active: true },
     { id: 'q2', text: 'Hai notato ritenzione idrica tibiale al risveglio?', active: true },
@@ -78,18 +81,18 @@ export const CoachCheckInReview: React.FC = () => {
             Console Head Coach
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-            Check-In Review & Survey Customizer
+            Check-In Review & Automazioni
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Analisi comparativa settimana su settimana, galleria foto progresso side-by-side e feedback 1-on-1
+            Analisi comparativa settimana su settimana, galleria foto progresso side-by-side e scheduler invio report via email
           </p>
         </div>
 
-        {/* Tab switch between Review and Survey Customizer */}
-        <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-lg">
+        {/* Tab switch between Review, Survey Customizer, and Email Scheduler */}
+        <div className="flex flex-wrap items-center gap-2 p-1 bg-slate-100 rounded-xl">
           <button
             onClick={() => setActiveTab('REVIEW')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
               activeTab === 'REVIEW' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -97,16 +100,31 @@ export const CoachCheckInReview: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab('CUSTOMIZE_SURVEY')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
               activeTab === 'CUSTOMIZE_SURVEY' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Personalizza Survey
           </button>
+          <button
+            onClick={() => setActiveTab('EMAIL_SCHEDULER')}
+            className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+              activeTab === 'EMAIL_SCHEDULER'
+                ? 'bg-purple-700 text-white shadow-md'
+                : 'bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200'
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5" />
+            Scheduler Email
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
+          </button>
         </div>
       </div>
 
-      {activeTab === 'CUSTOMIZE_SURVEY' ? (
+      {activeTab === 'EMAIL_SCHEDULER' ? (
+        /* EMAIL SCHEDULER VIEW */
+        <CheckInEmailSchedulerView />
+      ) : activeTab === 'CUSTOMIZE_SURVEY' ? (
         /* SURVEY CUSTOMIZER PANEL */
         <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
           <div className="flex items-center justify-between pb-4 border-b border-slate-100">

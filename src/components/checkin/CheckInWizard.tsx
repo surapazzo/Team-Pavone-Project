@@ -21,6 +21,7 @@ import {
   Send,
   Mail,
   AlertTriangle,
+  Clock,
 } from 'lucide-react';
 
 export const CheckInWizard: React.FC = () => {
@@ -30,6 +31,8 @@ export const CheckInWizard: React.FC = () => {
     submitWeeklyCheckin,
     theme,
     setCurrentRoute,
+    schedulerConfig,
+    setIsEmailSchedulerModalOpen,
   } = useApp();
 
   const athleteLogs = dailyLogs.filter((l) => l.athlete_id === currentUser.id);
@@ -236,6 +239,23 @@ export const CheckInWizard: React.FC = () => {
               <span className="font-extrabold text-purple-300">{averages7d.totalWorkouts} svolte</span>
             </div>
           </div>
+        </div>
+
+        {/* Scheduler Notification Bar */}
+        <div className="mt-3 p-3 bg-purple-50/80 border border-purple-200/80 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-purple-950">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-purple-700 shrink-0" />
+            <span>
+              <strong>Invio Automatico Scheduler:</strong> Il report viene inviato via email a <strong>Francesco Pavone</strong> ({schedulerConfig.coach_email}) e in copia a <strong>{currentUser.email}</strong>.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsEmailSchedulerModalOpen(true)}
+            className="px-3 py-1 bg-purple-700 hover:bg-purple-800 text-white rounded-lg font-bold text-[11px] whitespace-nowrap shadow-xs transition-colors self-start sm:self-auto"
+          >
+            Configura Scheduler
+          </button>
         </div>
       </div>
 

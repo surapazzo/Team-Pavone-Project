@@ -49,6 +49,8 @@ export interface LandingContent {
   hero_subtitle: string;
   hero_cta_text: string;
   coach_bio: string;
+  hero_image_url?: string;
+  coach_portrait_url?: string;
   announcements: Array<{
     id: string;
     title: string;
@@ -109,6 +111,24 @@ export interface GarminFitActivity {
   max_heart_rate: number;
   total_steps: number;
   raw_fit_metadata?: Record<string, unknown>;
+  imported_at: string;
+}
+
+export interface GarminSleepLog {
+  id: string;
+  athlete_id: string;
+  sleep_date: string; // YYYY-MM-DD
+  total_sleep_hours: number;
+  sleep_score: number; // 0-100
+  quality_rating: 'ECCELLENTE' | 'BUONO' | 'ACCETTABILE' | 'SCADENTE';
+  deep_sleep_minutes: number;
+  light_sleep_minutes: number;
+  rem_sleep_minutes: number;
+  awake_minutes: number;
+  avg_hrv_ms: number;
+  resting_heart_rate_bpm: number;
+  sleep_efficiency_pct: number;
+  file_name: string;
   imported_at: string;
 }
 
@@ -276,3 +296,56 @@ export interface TestCaseResult {
   execution_log?: string;
   timestamp?: string;
 }
+
+export interface CookiePreferences {
+  necessary: boolean; // Sempre attivi per sessione, token e sicurezza
+  preferences: boolean; // Impostazioni interfaccia, lingua, tema
+  analytics: boolean; // Statistiche anonime e telemetria prestazionale
+  timestamp: string;
+  hasConsented: boolean;
+}
+
+// ============================================================================
+// CHECK-IN EMAIL SCHEDULER & DISPATCH LOG TYPES
+// ============================================================================
+export type CheckInSchedulerTriggerType = 'WEEKLY_REMINDER' | 'CHECKIN_REPORT_SUBMISSION' | 'MANUAL_DISPATCH';
+export type CheckInEmailStatus = 'SCHEDULED' | 'SENT' | 'FAILED' | 'PENDING';
+export type CheckInDayOfWeek = 'SUNDAY' | 'MONDAY' | 'SATURDAY' | 'FRIDAY';
+
+export interface CheckInSchedulerConfig {
+  id: string;
+  athlete_id: string; // 'ALL' or specific athlete ID
+  enabled: boolean;
+  day_of_week: CheckInDayOfWeek;
+  send_time: string; // '18:00'
+  timezone: string; // 'Europe/Rome'
+  send_reminder_to_athlete: boolean;
+  send_report_to_coach: boolean;
+  send_report_to_athlete_copy: boolean;
+  coach_email: string; // 'francesco.pavone@teampavone.it'
+  additional_cc_emails: string[]; // e.g. ['daniele.coach@teampavone.it']
+  template_type: 'TEAM_PAVONE_OFFICIAL' | 'EXECUTIVE_COACH' | 'ATHLETE_SUMMARY';
+  include_garmin_sleep_data: boolean;
+  include_progress_photos: boolean;
+  last_run_timestamp?: string;
+  next_scheduled_run: string;
+  auto_retry_on_failure: boolean;
+}
+
+export interface CheckInEmailDispatchLog {
+  id: string;
+  scheduler_id?: string;
+  checkin_id?: string;
+  athlete_id: string;
+  athlete_name: string;
+  recipient_email: string;
+  cc_emails?: string[];
+  subject: string;
+  status: CheckInEmailStatus;
+  sent_at: string;
+  delivery_time_ms: number; // e.g. 1420ms (< 5s as per TC-QA-02)
+  email_html_preview: string;
+  trigger_type: CheckInSchedulerTriggerType;
+  error_message?: string;
+}
+
