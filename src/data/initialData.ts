@@ -1,0 +1,422 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import {
+  UserProfile,
+  ThemeConfig,
+  LandingContent,
+  DailyLog,
+  MacrocycleWeek,
+  CalendarEvent,
+  WorkoutProgram,
+  WeeklyCheckIn,
+  StripeSubscriptionData,
+  ExerciseVideo,
+} from '../types';
+
+export const INITIAL_THEME: ThemeConfig = {
+  id: 'theme-team-pavone',
+  brand_name: 'Team Pavone',
+  logo_url: '',
+  bg_primary: '#FFFFFF',
+  bg_secondary: '#F8FAFC',
+  text_primary: '#0F172A',
+  accent_primary: '#6D28D9', // Team Pavone Violet
+  accent_secondary: '#7C3AED',
+  custom_css_vars: {
+    '--accent-primary': '#6D28D9',
+    '--accent-secondary': '#7C3AED',
+    '--accent-light': '#EDE9FE',
+  },
+  updated_at: new Date().toISOString(),
+};
+
+export const INITIAL_LANDING_CONTENT: LandingContent = {
+  hero_title: 'Team Pavone · Scienza, Metodo e Risultati Misurabili nel Bodybuilding',
+  hero_subtitle:
+    'L\'ecosistema di coaching di Francesco Pavone che digitalizza, blinda e automatizza la tua trasformazione fisica. Periodizzazione avanzata, telemetria Garmin e check-in approfonditi.',
+  hero_cta_text: 'Accedi all\'Area Riservata',
+  coach_bio:
+    'Francesco Pavone è preparatore atletico specializzato nel bodybuilding natural agonistico e amatoriale avanzato. Il suo metodo combina fisiologia applicata, rigore analitico su carichi e recupero, gestione millimetrica dei macronutrienti e monitoraggio continuo della risposta ormonale e metabolica.',
+  announcements: [
+    {
+      id: 'ann-1',
+      title: 'Apertura Selezioni Stagione Agonistica 2026/2027',
+      body: 'Aperte le candidature per il roster atleti agonistici Team Pavone. Analisi posturale, storico mesocicli e colloquio tecnico obbligatori.',
+      date: '2026-03-01',
+      published: true,
+    },
+    {
+      id: 'ann-2',
+      title: 'Nuovo Modulo Telemetria Garmin .FIT Nativo',
+      body: 'Da oggi è possibile collegare il Garmin via cavo USB e sincronizzare le sessioni in palestra, dispendio energetico reale e frequenza cardiaca.',
+      date: '2026-02-15',
+      published: true,
+    },
+    {
+      id: 'ann-3',
+      title: 'Masterclass: Ciclizzazione Glucidica nei Giorni ON vs OFF',
+      body: 'Registrazione disponibile per tutti gli atleti attivi. Strategie di ricarica per il priming dell\'insulina e supercompensazione di glicogeno.',
+      date: '2026-01-20',
+      published: true,
+    },
+  ],
+  testimonials: [
+    {
+      id: 'test-1',
+      athlete_name: 'Luca Puci',
+      text: 'In 24 settimane con Francesco abbiamo rimosso ogni casualità. Il monitoraggio del peso a media mobile 7gg e i check-in strutturati hanno eliminato l\'ansia da fluttuazione idrica portandomi alla miglior condizione mai raggiunta.',
+      change_metric: '-8.5 kg in Deficit Controllato (BF stimata: da 15.2% a 8.1%)',
+      before_after_url: 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800&auto=format&fit=crop&q=80',
+    },
+    {
+      id: 'test-2',
+      athlete_name: 'Marco Bianchi',
+      text: 'La periodizzazione a blocchi tra Tensione Meccanica e Sarcoplasmatica mi ha permesso di sbloccare i carichi sui multiarticolari senza infiammare i gomiti. Il supporto via video feedback è impagabile.',
+      change_metric: '+4.2 kg Massa Pulita (Surplus Modulato in 8 Mesi)',
+      before_after_url: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format&fit=crop&q=80',
+    },
+    {
+      id: 'test-3',
+      athlete_name: 'Giulia Rossi',
+      text: 'Gestione del ciclo e dei volumi di allenamento calibrata sui miei ritmi circadiani e lavorativi. Finalmente un preparatore che guarda i dati oggettivi (sonno, passi, digestione) e non tabelle prestampate.',
+      change_metric: 'Ricomposizione Corporea (-4 cm girovita, +2.5 cm glutei)',
+      before_after_url: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&auto=format&fit=crop&q=80',
+    },
+  ],
+};
+
+export const COACH_USER: UserProfile = {
+  id: 'coach-francesco-pavone',
+  role: 'COACH',
+  email: 'francesco.pavone@teampavone.it',
+  full_name: 'Francesco Pavone',
+  avatar_url: '',
+  initial_weight_kg: 88.0,
+  target_weight_kg: 85.0,
+  experience_level: 'OVER_4_YEARS',
+  created_at: '2025-01-01T00:00:00Z',
+};
+
+export const ATHLETES_LIST: UserProfile[] = [
+  {
+    id: 'athlete-luca-puci',
+    role: 'ATHLETE',
+    assigned_coach_id: 'coach-francesco-pavone',
+    email: 'luca.puci@gmail.com',
+    full_name: 'Luca Puci',
+    avatar_url: '',
+    initial_weight_kg: 86.5,
+    target_weight_kg: 79.0,
+    experience_level: 'TWO_TO_FOUR_YEARS',
+    created_at: '2026-01-05T00:00:00Z',
+  },
+  {
+    id: 'athlete-giulia-rossi',
+    role: 'ATHLETE',
+    assigned_coach_id: 'coach-francesco-pavone',
+    email: 'giulia.rossi@outlook.com',
+    full_name: 'Giulia Rossi',
+    avatar_url: '',
+    initial_weight_kg: 62.0,
+    target_weight_kg: 58.0,
+    experience_level: 'UNDER_2_YEARS',
+    created_at: '2026-01-12T00:00:00Z',
+  },
+  {
+    id: 'athlete-marco-bianchi',
+    role: 'ATHLETE',
+    assigned_coach_id: 'coach-francesco-pavone',
+    email: 'marco.bianchi@gmail.com',
+    full_name: 'Marco Bianchi',
+    avatar_url: '',
+    initial_weight_kg: 78.0,
+    target_weight_kg: 83.0,
+    experience_level: 'OVER_4_YEARS',
+    created_at: '2026-01-20T00:00:00Z',
+  },
+];
+
+// 14 days of realistic logs for Luca Puci (6 days Low Carb + 1 day High Carb cycle as described in PDF Section 7 TC-QA-01)
+export const INITIAL_DAILY_LOGS: DailyLog[] = [
+  // Week 1 (2026-W10: 2026-03-02 to 2026-03-08)
+  { id: 'log-1', athlete_id: 'athlete-luca-puci', log_date: '2026-03-02', weight_kg: 82.4, calories_kcal: 2300, steps: 11000, sleep_hours: 8.0, workout_completed: true, waist_circ_cm: 83.5, hips_circ_cm: 99.0, arm_circ_cm: 39.0, thigh_circ_cm: 59.5, notes: 'Allenamento Spinta A. Forza stabile su panca inclinata manubri.' },
+  { id: 'log-2', athlete_id: 'athlete-luca-puci', log_date: '2026-03-03', weight_kg: 82.2, calories_kcal: 2300, steps: 10500, sleep_hours: 7.5, workout_completed: true, waist_circ_cm: 83.4, hips_circ_cm: 99.0, arm_circ_cm: 39.0, thigh_circ_cm: 59.5, notes: 'Trazione A. Ottimo focus sul rematore su panca inclinata.' },
+  { id: 'log-3', athlete_id: 'athlete-luca-puci', log_date: '2026-03-04', weight_kg: 82.0, calories_kcal: 2300, steps: 12000, sleep_hours: 8.0, workout_completed: false, waist_circ_cm: 83.2, hips_circ_cm: 98.8, arm_circ_cm: 39.0, thigh_circ_cm: 59.4, notes: 'Giorno OFF. Camminata all\'aperto e stretching mobilità anche.' },
+  { id: 'log-4', athlete_id: 'athlete-luca-puci', log_date: '2026-03-05', weight_kg: 81.9, calories_kcal: 2300, steps: 11500, sleep_hours: 7.5, workout_completed: true, waist_circ_cm: 83.1, hips_circ_cm: 98.7, arm_circ_cm: 38.9, thigh_circ_cm: 59.3, notes: 'Gambe A. Hack Squat 3 serie con 2 RIR, pump quadricipiti intenso.' },
+  { id: 'log-5', athlete_id: 'athlete-luca-puci', log_date: '2026-03-06', weight_kg: 81.8, calories_kcal: 2300, steps: 10800, sleep_hours: 8.0, workout_completed: true, waist_circ_cm: 83.0, hips_circ_cm: 98.6, arm_circ_cm: 38.9, thigh_circ_cm: 59.2, notes: 'Upper B. Spalle e braccia con enfasi su deltoide laterale.' },
+  { id: 'log-6', athlete_id: 'athlete-luca-puci', log_date: '2026-03-07', weight_kg: 81.6, calories_kcal: 2300, steps: 10200, sleep_hours: 8.5, workout_completed: false, waist_circ_cm: 82.9, hips_circ_cm: 98.5, arm_circ_cm: 38.8, thigh_circ_cm: 59.2, notes: 'Giorno OFF. Recupero attivo, sauna 15 min.' },
+  { id: 'log-7', athlete_id: 'athlete-luca-puci', log_date: '2026-03-08', weight_kg: 81.5, calories_kcal: 3100, steps: 11200, sleep_hours: 8.0, workout_completed: true, waist_circ_cm: 82.8, hips_circ_cm: 98.5, arm_circ_cm: 38.8, thigh_circ_cm: 59.1, notes: 'Giorno ON - Ricarica Glucidica (450g Cho). Muscoli subito più pieni.' },
+
+  // Week 2 (2026-W11: 2026-03-09 to 2026-03-15)
+  { id: 'log-8', athlete_id: 'athlete-luca-puci', log_date: '2026-03-09', weight_kg: 81.7, calories_kcal: 2250, steps: 11400, sleep_hours: 7.8, workout_completed: true, waist_circ_cm: 82.7, hips_circ_cm: 98.4, arm_circ_cm: 38.8, thigh_circ_cm: 59.0, notes: 'Spinta A. Picco di glicogeno post-ricarica, record su military press.' },
+  { id: 'log-9', athlete_id: 'athlete-luca-puci', log_date: '2026-03-10', weight_kg: 81.4, calories_kcal: 2250, steps: 10900, sleep_hours: 8.0, workout_completed: true, waist_circ_cm: 82.6, hips_circ_cm: 98.3, arm_circ_cm: 38.7, thigh_circ_cm: 58.9, notes: 'Trazione A. Connessione mente-muscolo su lat machine impeccabile.' },
+  { id: 'log-10', athlete_id: 'athlete-luca-puci', log_date: '2026-03-11', weight_kg: 81.2, calories_kcal: 2250, steps: 11800, sleep_hours: 8.2, workout_completed: false, waist_circ_cm: 82.5, hips_circ_cm: 98.2, arm_circ_cm: 38.7, thigh_circ_cm: 58.8, notes: 'Giorno OFF. Dati Garmin importati via USB senza errori.' },
+];
+
+export const INITIAL_MACROCYCLE_WEEKS: MacrocycleWeek[] = [
+  {
+    id: 'macro-1',
+    athlete_id: 'athlete-luca-puci',
+    week_number: 10,
+    year: 2026,
+    iso_week: '2026-W10',
+    training_phase: 'TENSIONE',
+    nutrition_phase: 'DEFICIT',
+    target_kcal_on: 2300,
+    target_kcal_off: 2100,
+    target_carbs_on_g: 310,
+    target_carbs_off_g: 220,
+    target_protein_g: 185,
+    target_fats_g: 50,
+    target_steps_daily: 11000,
+    cardio_prescription: '25 min LISS post allenamento su tapis roulant (pendenza 6%, velocità 5 km/h)',
+  },
+  {
+    id: 'macro-2',
+    athlete_id: 'athlete-luca-puci',
+    week_number: 11,
+    year: 2026,
+    iso_week: '2026-W11',
+    training_phase: 'TENSIONE',
+    nutrition_phase: 'DEFICIT',
+    target_kcal_on: 2250,
+    target_kcal_off: 2050,
+    target_carbs_on_g: 300,
+    target_carbs_off_g: 210,
+    target_protein_g: 185,
+    target_fats_g: 48,
+    target_steps_daily: 11500,
+    cardio_prescription: '30 min LISS post workout o digiuno mattina',
+  },
+  {
+    id: 'macro-3',
+    athlete_id: 'athlete-luca-puci',
+    week_number: 12,
+    year: 2026,
+    iso_week: '2026-W12',
+    training_phase: 'IPERTROFIA_SARCO',
+    nutrition_phase: 'DEFICIT',
+    target_kcal_on: 2200,
+    target_kcal_off: 2000,
+    target_carbs_on_g: 290,
+    target_carbs_off_g: 200,
+    target_protein_g: 190,
+    target_fats_g: 45,
+    target_steps_daily: 12000,
+    cardio_prescription: '30 min LISS + 1 sessione HIIT 12 min fine settimana',
+  },
+  {
+    id: 'macro-4',
+    athlete_id: 'athlete-luca-puci',
+    week_number: 13,
+    year: 2026,
+    iso_week: '2026-W13',
+    training_phase: 'DELOAD',
+    nutrition_phase: 'DIET_BREAK',
+    target_kcal_on: 2600,
+    target_kcal_off: 2400,
+    target_carbs_on_g: 380,
+    target_carbs_off_g: 320,
+    target_protein_g: 175,
+    target_fats_g: 55,
+    target_steps_daily: 9000,
+    cardio_prescription: 'Recupero attivo, solo camminate libere',
+  },
+];
+
+export const INITIAL_CALENDAR_EVENTS: CalendarEvent[] = [
+  {
+    id: 'evt-1',
+    athlete_id: 'athlete-luca-puci',
+    event_date: '2026-03-22',
+    title: 'Compleanno Papà (Cena di famiglia)',
+    priority: 'LOW',
+    notes: 'Gestirò il budget calorico aumentando il digiuno intermittente a pranzo.',
+  },
+  {
+    id: 'evt-2',
+    athlete_id: 'athlete-luca-puci',
+    event_date: '2026-04-05',
+    title: 'Viaggio di Lavoro a Francoforte (3 giorni)',
+    priority: 'HIGH',
+    notes: 'Hotel senza palestra attrezzata, solo manubri fino a 20kg. Chiedo rimodulazione scheda.',
+  },
+];
+
+export const INITIAL_WORKOUT_PROGRAMS: WorkoutProgram[] = [
+  {
+    id: 'prog-1',
+    athlete_id: 'athlete-luca-puci',
+    title: 'Mesociclo 3 - Tensione Meccanica & Overload Progressivo',
+    mesocycle_name: 'Fase di Taglio Pre-Gara',
+    split_day: 'Giorno A - Upper Push & Deltoidi',
+    active: true,
+    exercises: [
+      {
+        id: 'ex-1',
+        name: 'Distensioni con Manubri su Panca 30°',
+        sets: 4,
+        reps: '6-8',
+        rir: 1,
+        rest_sec: 150,
+        notes: 'Arco lombare naturale, scapole addotte e depresse. Fermo al petto di 1 secondo, risalita esplosiva.',
+        video_url: 'https://www.youtube.com/embed/8iPEnn-ltC8',
+      },
+      {
+        id: 'ex-2',
+        name: 'Dip alle Parallele con Sovraccarico',
+        sets: 3,
+        reps: '8-10',
+        rir: 1,
+        rest_sec: 120,
+        notes: 'Busto inclinato a 45 gradi per focalizzare il gran pettorale sternocostale.',
+        video_url: 'https://www.youtube.com/embed/2z8JmcrW-As',
+      },
+      {
+        id: 'ex-3',
+        name: 'Alzate Laterali al Cavo dal Basso',
+        sets: 4,
+        reps: '10-12',
+        rir: 0,
+        rest_sec: 90,
+        notes: 'Cavo regolato all\'altezza del ginocchio per ottimizzare la curva di resistenza sul deltoide laterale.',
+        video_url: 'https://www.youtube.com/embed/PPrzBWZDOhA',
+      },
+      {
+        id: 'ex-4',
+        name: 'French Press con Bilanciere EZ su Panca Declinata',
+        sets: 3,
+        reps: '10-12',
+        rir: 2,
+        rest_sec: 90,
+        notes: 'Gomiti stabili, allungamento massimo del capo lungo del tricipite.',
+        video_url: 'https://www.youtube.com/embed/1u18yJmLrTc',
+      },
+    ],
+  },
+  {
+    id: 'prog-2',
+    athlete_id: 'athlete-luca-puci',
+    title: 'Mesociclo 3 - Tensione Meccanica & Overload Progressivo',
+    mesocycle_name: 'Fase di Taglio Pre-Gara',
+    split_day: 'Giorno B - Lower Quad Focus',
+    active: true,
+    exercises: [
+      {
+        id: 'ex-5',
+        name: 'Hack Squat Guidato',
+        sets: 4,
+        reps: '6-8',
+        rir: 1,
+        rest_sec: 180,
+        notes: 'Piedi a larghezza spalle nella parte bassa della pedana, massima flessione di ginocchio consentita dalla mobilità di caviglia.',
+        video_url: 'https://www.youtube.com/embed/0tn5K9NlCfo',
+      },
+      {
+        id: 'ex-6',
+        name: 'Leg Press a 45°',
+        sets: 3,
+        reps: '10-12',
+        rir: 1,
+        rest_sec: 150,
+        notes: 'Discesa lenta in 3 secondi, no blocco articolare in cima.',
+        video_url: 'https://www.youtube.com/embed/IZxyjW7MPJQ',
+      },
+      {
+        id: 'ex-7',
+        name: 'Leg Extension Unilaterale',
+        sets: 3,
+        reps: '12-15 + Rest Pause',
+        rir: 0,
+        rest_sec: 90,
+        notes: 'Picco di contrazione di 2 secondi in alto, dorsiflessione del piede.',
+        video_url: 'https://www.youtube.com/embed/YyvSfVjQeL0',
+      },
+    ],
+  },
+];
+
+export const TUTORIAL_VIDEOS_LIBRARY: ExerciseVideo[] = [
+  {
+    id: 'vid-1',
+    exercise_name: 'Distensioni su Panca Inclinata Manubri',
+    tutorial_url: 'https://www.youtube.com/embed/8iPEnn-ltC8',
+    key_points: ['Scapole retratte', 'Gomiti a 45°', 'Fermo al petto', 'Spinta costante'],
+  },
+  {
+    id: 'vid-2',
+    exercise_name: 'Hack Squat Guidato',
+    tutorial_url: 'https://www.youtube.com/embed/0tn5K9NlCfo',
+    key_points: ['Bacino saldamente adeso allo schienale', 'Ginocchia in linea con le punte', 'ROM profondo'],
+  },
+  {
+    id: 'vid-3',
+    exercise_name: 'Stacco da Terra Rumeno (RDL)',
+    tutorial_url: 'https://www.youtube.com/embed/JCXUYuzwNrM',
+    key_points: ['Hinge d\'anca puro', 'Bilanciere a contatto con la tibia', 'Core compatto a 360°'],
+  },
+];
+
+export const INITIAL_CHECKINS: WeeklyCheckIn[] = [
+  {
+    id: 'chk-w10',
+    athlete_id: 'athlete-luca-puci',
+    iso_week: '2026-W10',
+    submission_date: '2026-03-08T18:30:00Z',
+    review_status: 'REVIEWED',
+    coach_feedback: 'Condizione eccellente Luca. La media peso è scesa esattamente nel target fisiologico (-0.8% settimanale) senza intaccare i carichi sui multiarticolari. Ottima la gestione della ricarica domenicale. Continuiamo con questo taglio per altre 2 settimane prima del deload programmato.',
+    avg_weight_kg: 81.63,
+    avg_steps: 11171,
+    avg_calories: 2414,
+    checkin_link: 'https://app.teampavone.it/app/check-in/review/chk-w10',
+    weekly_rating: 9,
+    highlights: 'Sensazioni di forza ottime nonostante il deficit calorico, 2 ripetizioni in più su panca manubri 42kg.',
+    improvement_areas: 'Idratazione durante la mattinata (sono sceso sotto i 2 litri nei primi giorni).',
+    photos_uploaded: [
+      { view: 'front', url: 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=600&auto=format&fit=crop&q=80', caption: 'Fronte rilassato & addome' },
+      { view: 'side', url: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&auto=format&fit=crop&q=80', caption: 'Lato torace e bicipite femorale' },
+      { view: 'back', url: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=600&auto=format&fit=crop&q=80', caption: 'Doppio bicipite posteriore' },
+    ],
+    training_energy: 'Alta',
+    training_time_slot: 'Pomeriggio',
+    training_exact_time: '17:30',
+    post_workout_fatigue: 'No',
+    exercise_improvements: 'Migliorata la stabilità sul rematore T-bar.',
+    exercises_needing_work: 'Leggeri fastidi al tendine d\'achille sinistro post-corsa, meglio passare interamente al tapis roulant inclinato.',
+    mesocycle_favorite: 'La progressione a basse ripetizioni e alto carico sui fondamentali.',
+    execution_videos: [
+      { exercise_name: 'Distensioni Manubri 30°', video_url: 'https://www.youtube.com/embed/8iPEnn-ltC8', coach_comment: 'Traiettoria pulita e gomito perfettamente sotto il carico. Bravo!' },
+    ],
+    training_motivation: 'Vedere le vene comparire sul basso addome mi dà una carica pazzesca.',
+    training_questions: 'Nel Giorno B possiamo scambiare la leg press orizzontale con la 45 gradi?',
+    hit_macros_daily: 'Si',
+    measurement_precision: 10,
+    daytime_hunger: 'Fame leggera verso le 16:30 prima del pre-workout, gestita con 500ml di acqua e tè verde.',
+    meals_per_day: 4,
+    diet_struggles: 'Nessuna, piano alimentare sostenibile e digeribile.',
+    day_energy: 'Buona',
+    muscle_joint_soreness: 'DOMS intensi sui femorali per 48h ma tollerabili.',
+    sleep_trouble: 'No',
+    avg_bedtime: '23:30',
+    late_nights: 'Nessuna serata oltre mezzanotte.',
+    night_wakings: 'Una volta sola per bere acqua.',
+    digestive_issues: 'No',
+    suspected_foods: 'Tutto ottimale, ottima tolleranza all\'avena integrale.',
+    free_thoughts_space: 'Francesco sono davvero soddisfatto di come stiamo lavorando. Mentalmente sono focalizzato al 100%.',
+  },
+];
+
+export const INITIAL_STRIPE_DATA: StripeSubscriptionData = {
+  mrr_eur: 8450,
+  active_subscribers: 34,
+  expiring_this_week: 3,
+  subscriptions: [
+    { id: 'sub-1', athlete_name: 'Luca Puci', plan: 'Elite 1-on-1 Prep Agonistica', status: 'ACTIVE', renewal_date: '2026-04-05', amount_eur: 280 },
+    { id: 'sub-2', athlete_name: 'Giulia Rossi', plan: 'Coaching Scientifico Pro', status: 'ACTIVE', renewal_date: '2026-03-18', amount_eur: 220 },
+    { id: 'sub-3', athlete_name: 'Marco Bianchi', plan: 'Off-Season Hypertrophy Lab', status: 'ACTIVE', renewal_date: '2026-03-14', amount_eur: 220 },
+    { id: 'sub-4', athlete_name: 'Davide Conti', plan: 'Coaching Scientifico Pro', status: 'TRIALING', renewal_date: '2026-03-25', amount_eur: 220 },
+  ],
+};
