@@ -1,0 +1,67 @@
+{
+  "app": {
+    "brand": "Team Pavone",
+    "subtitle": "Coaching & Culturisme Scientifique",
+    "publicSite": "Site Public",
+    "clientArea": "Espace Client",
+    "login": "Connexion",
+    "logout": "Déconnexion",
+    "language": "Langue"
+  },
+  "nav": {
+    "dashboard": "Tableau de Bord",
+    "calendar": "Macrocycle",
+    "workouts": "Entraînement",
+    "nutrition": "Nutrition & Recettes",
+    "community": "Forum Q&A",
+    "toolbox": "Habitudes & Toolbox",
+    "checkin": "Bilan",
+    "privacy": "Confidentialité & RGPD"
+  },
+  "workout": {
+    "loggerTitle": "Journal d'Entraînement Mobile",
+    "startSession": "Démarrer la Séance",
+    "finishSession": "Terminer & Enregistrer",
+    "weightKg": "Poids (kg)",
+    "reps": "Reps",
+    "rpeRir": "RPE / RIR",
+    "preEffort": "Effort Pré-Séance (1-10)",
+    "intraEffort": "Effort Pendant (1-10)",
+    "postEffort": "Effort Post-Séance (1-10)",
+    "domsTitle": "Avez-vous des courbatures suite à la séance d'hier ? Où le plus ?",
+    "domsSave": "Enregistrer DOMS"
+  },
+  "nutrition": {
+    "title": "Nutrition, Portions à la Main & Recettes",
+    "palms": "Paumes (Protéines)",
+    "thumbs": "Pouces (Lipides)",
+    "cuppedHands": "Poignées (Glucides cuits)",
+    "fists": "Poings (Légumes)",
+    "foodSpectrum": "Spectre Alimentaire",
+    "eatMore": "Manger Plus",
+    "eatSome": "Manger Modérément",
+    "eatLess": "Limiter",
+    "hungerPre": "Faim Pré-Repas (1-10)",
+    "satietyPost": "Satiété Post-Repas +60m (1-10)"
+  },
+  "community": {
+    "title": "Forum Public Q&A & FAQ",
+    "subtitle": "Bloc quotidien de 60 min par Coach Francesco Pavone",
+    "myQuestions": "Mes Questions",
+    "allTopics": "Tous les Sujets",
+    "pinned": "Épinglé",
+    "askPlaceholder": "Posez une question au Coach..."
+  },
+  "toolbox": {
+    "title": "Habitudes & Boîte à Outils",
+    "habitsTitle": "Suivi des Habitudes",
+    "reflectionTitle": "Réflexion du Soir",
+    "libraryTitle": "Guides & Fiches Pratiques"
+  },
+  "onboarding": {
+    "title": "Questionnaire de Qualification",
+    "tier1": "Offre 1 · App Entry-Level (€19/mois)",
+    "tier2": "Offre 2 · Coaching VIP 1-on-1",
+    "pendingCoachReview": "En attente d'examen"
+  }
+}

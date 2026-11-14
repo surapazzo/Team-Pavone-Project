@@ -5,19 +5,17 @@
 
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { calculate7DayMovingAverages, aggregateLogsByIsoWeek } from '../../services/bodybuildingLogic';
 import {
   Users,
   Search,
   CheckSquare,
   Video,
   CreditCard,
-  TrendingUp,
-  Activity,
-  Heart,
   Calendar,
   ArrowRight,
-  ExternalLink,
+  PhoneCall,
+  ShieldCheck,
+  MessageSquare,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -28,6 +26,7 @@ import {
   Tooltip,
   CartesianGrid,
 } from 'recharts';
+import { CoachTrainingAnalytics } from './CoachTrainingAnalytics';
 
 export const CoachDashboard: React.FC = () => {
   const {
@@ -37,13 +36,16 @@ export const CoachDashboard: React.FC = () => {
     selectedAthlete,
     dailyLogs,
     weeklyCheckins,
-    garminActivities,
     stripeData,
     setCurrentRoute,
-    theme,
+    onboardingApplications,
+    inviteToDiscoveryCall,
+    approveVipApplication,
+    qaThreads,
   } = useApp();
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [callLinks, setCallLinks] = useState<Record<string, string>>({});
 
   const filteredAthletes = athletes.filter((a) =>
     a.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -55,12 +57,8 @@ export const CoachDashboard: React.FC = () => {
     .filter((l) => l.athlete_id === selectedAthleteId)
     .sort((a, b) => a.log_date.localeCompare(b.log_date));
 
-  const athleteCheckins = weeklyCheckins.filter((c) => c.athlete_id === selectedAthleteId);
   const pendingCheckinsCount = weeklyCheckins.filter((c) => c.review_status === 'PENDING').length;
-  const athleteGarminActivities = garminActivities.filter((g) => g.athlete_id === selectedAthleteId);
-
-  const averages7d = calculate7DayMovingAverages(athleteLogs);
-  const weeklyAggregations = aggregateLogsByIsoWeek(athleteLogs, 'DEFICIT', selectedAthlete.experience_level);
+  const unansweredQaCount = qaThreads.filter((th) => !th.replies.some((r) => r.is_official_coach_reply)).length;
 
   // Chart data for selected athlete
   const chartData = athleteLogs.map((log, index) => {
@@ -87,7 +85,7 @@ export const CoachDashboard: React.FC = () => {
             Panoramica CX & Gestione Team Pavone
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            Supervisione atleti, aderenza settimanale, telemetria Garmin e fatturato Stripe
+            Supervisione atleti, analytics allenamento & DOMS, bacheca Q&A e coda ammissioni VIP
           </p>
         </div>
 
@@ -171,7 +169,7 @@ export const CoachDashboard: React.FC = () => {
           <div>
             <h2 className="text-base font-bold text-slate-900">Roster Atleti & Semaforo Aderenza</h2>
             <p className="text-xs text-slate-500">
-              Clicca su un atleta per visualizzare la telemetria Garmin e il macrociclo dedicato
+              Clicca su un atleta per visualizzare gli analytics di allenamento, DOMS e il macrociclo dedicato
             </p>
           </div>
           <span className="text-xs font-semibold text-slate-500">
@@ -195,7 +193,7 @@ export const CoachDashboard: React.FC = () => {
                 key={ath.id}
                 onClick={() => setSelectedAthleteId(ath.id)}
                 className={`p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer transition-colors ${
-                  isSelected ? 'bg-purple-50/70 border-l-4 border-purple-700' : 'hover:bg-slate-50'
+                  isSelected ? 'bg-purple-50/70 ring-1 ring-inset ring-purple-300' : 'hover:bg-slate-50'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -275,7 +273,13 @@ export const CoachDashboard: React.FC = () => {
             </h2>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setCurrentRoute('/app/community')}
+              className="px-3 py-1.5 bg-indigo-50 text-indigo-800 hover:bg-indigo-100 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            >
+              <MessageSquare className="w-3.5 h-3.5" /> Q&A Da Rispondere ({unansweredQaCount})
+            </button>
             <button
               onClick={() => setCurrentRoute('/app/calendar')}
               className="px-3 py-1.5 bg-slate-100 text-slate-800 hover:bg-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
@@ -291,47 +295,8 @@ export const CoachDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Telemetria Garmin (.FIT) Cards */}
-        <div>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
-            <Activity className="w-3.5 h-3.5 text-indigo-600" />
-            Telemetria Garmin (.FIT via USB) Registrata
-          </h3>
-
-          {athleteGarminActivities.length > 0 ? (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {athleteGarminActivities.map((act) => (
-                <div key={act.id} className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                  <div className="text-xs font-bold text-slate-900 mb-1">{act.activity_type}</div>
-                  <div className="text-[11px] text-slate-500 mb-3">{act.activity_date} · {act.file_name}</div>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <span className="text-slate-400 text-[10px] block">Durata</span>
-                      <span className="font-bold text-slate-800 font-mono-tabular">{Math.round(act.duration_seconds / 60)} min</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 text-[10px] block">Calorie Attive</span>
-                      <span className="font-bold text-orange-600 font-mono-tabular">{act.active_calories} kcal</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 text-[10px] block">FC Media</span>
-                      <span className="font-bold text-indigo-600 font-mono-tabular">{act.avg_heart_rate} bpm</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 text-[10px] block">FC Massima</span>
-                      <span className="font-bold text-rose-600 font-mono-tabular">{act.max_heart_rate} bpm</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 flex items-center justify-between">
-              <span>Nessun file .fit sincronizzato di recente da questo atleta.</span>
-              <span className="text-slate-400">In attesa del prossimo collegamento USB</span>
-            </div>
-          )}
-        </div>
+        {/* Module 1: Advanced Training & DOMS Analytics Dashboard */}
+        <CoachTrainingAnalytics />
 
         {/* Weight Trend Chart */}
         <div>
@@ -350,6 +315,96 @@ export const CoachDashboard: React.FC = () => {
               </ComposedChart>
             </ResponsiveContainer>
           </div>
+        </div>
+      </div>
+
+      {/* 5. Module 7: Qualifying Onboarding Funnel & VIP Approval Queue */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h2 className="text-base font-bold text-slate-900">
+              Coda Qualificazione Onboarding & Tier (Entry vs VIP)
+            </h2>
+            <p className="text-xs text-slate-500">
+              Gestisci gli accessi Entry-Level Stripe automatici e approva le candidature VIP dopo la Discovery Call.
+            </p>
+          </div>
+          <span className="text-xs font-mono-tabular font-bold text-purple-800 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200">
+            {onboardingApplications.length} Candidature
+          </span>
+        </div>
+
+        <div className="divide-y divide-slate-100">
+          {onboardingApplications.map((app) => (
+            <div key={app.id} className="p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-sm text-slate-900">{app.applicant_name}</span>
+                  <span className="text-xs text-slate-500">({app.applicant_email})</span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                    app.selected_tier === 'TIER_2_VIP'
+                      ? 'bg-purple-50 text-purple-900 border-purple-200'
+                      : 'bg-slate-100 text-slate-800 border-slate-200'
+                  }`}>
+                    {app.selected_tier === 'TIER_2_VIP' ? 'Tier 2 · VIP Coaching' : 'Tier 1 · Entry (€19/m)'}
+                  </span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                    app.status === 'TIER_2_APPROVED' || app.status === 'TIER_1_ACTIVE'
+                      ? 'bg-emerald-50 text-emerald-800'
+                      : app.status === 'DISCOVERY_CALL_INVITED'
+                      ? 'bg-blue-50 text-blue-800'
+                      : 'bg-amber-50 text-amber-800'
+                  }`}>
+                    {app.status}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600">
+                  <strong>Obiettivo:</strong> {app.primary_goal} · <strong>Esperienza:</strong> {app.training_experience} ·{' '}
+                  <strong>Impegno:</strong> <span className="font-mono-tabular">{app.commitment_score}/10</span> ({app.weekly_availability_days}gg/sett)
+                </p>
+                {app.injuries_or_notes && (
+                  <p className="text-[11px] text-slate-500">Note: {app.injuries_or_notes}</p>
+                )}
+              </div>
+
+              {app.selected_tier === 'TIER_2_VIP' && app.status !== 'TIER_2_APPROVED' && (
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  {app.status === 'PENDING_COACH_REVIEW' && (
+                    <>
+                      <input
+                        type="url"
+                        placeholder="https://calendly.com/teampavone/discovery"
+                        value={callLinks[app.id] || ''}
+                        onChange={(e) => setCallLinks({ ...callLinks, [app.id]: e.target.value })}
+                        className="px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs w-56"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          inviteToDiscoveryCall(
+                            app.id,
+                            callLinks[app.id] || 'https://calendly.com/teampavone/discovery-call'
+                          )
+                        }
+                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <PhoneCall className="w-3.5 h-3.5" />
+                        Invita a Discovery Call
+                      </button>
+                    </>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => approveVipApplication(app.id)}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    Approva VIP Coaching
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
     </div>

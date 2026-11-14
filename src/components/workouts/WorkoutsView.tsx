@@ -23,6 +23,7 @@ import {
   Search,
 } from 'lucide-react';
 import { ExerciseLibraryView } from './ExerciseLibraryView';
+import { MobileWorkoutLogger } from './MobileWorkoutLogger';
 
 export const WorkoutsView: React.FC = () => {
   const {
@@ -50,8 +51,8 @@ export const WorkoutsView: React.FC = () => {
   const [uploadVideoUrl, setUploadVideoUrl] = useState('');
   const [uploadSuccessMsg, setUploadSuccessMsg] = useState(false);
 
-  // View Tabs: WORKOUTS, EXERCISES_LIBRARY, NUTRITION
-  const [activeViewTab, setActiveViewTab] = useState<'WORKOUTS' | 'EXERCISES_LIBRARY' | 'NUTRITION'>('WORKOUTS');
+  // View Tabs: WORKOUTS, LOGGER, EXERCISES_LIBRARY, NUTRITION
+  const [activeViewTab, setActiveViewTab] = useState<'WORKOUTS' | 'LOGGER' | 'EXERCISES_LIBRARY' | 'NUTRITION'>('WORKOUTS');
 
   // Coach workout builder states
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
@@ -118,7 +119,12 @@ export const WorkoutsView: React.FC = () => {
         ? libEx.key_points.slice(0, 2).join(' · ')
         : libEx.description.slice(0, 80),
       video_url: libEx.video_url,
+      youtube_video_id: libEx.youtube_video_id,
       muscle_group: libEx.muscle_group,
+      primary_muscle: libEx.primary_muscle || libEx.muscle_group,
+      secondary_muscle: libEx.secondary_muscle,
+      joint_type: libEx.joint_type,
+      resistance_profile_bias: libEx.resistance_profile_bias,
       library_exercise_id: libEx.id,
     };
     setNewExercises((prev) => [...prev, newEx]);
@@ -178,6 +184,18 @@ export const WorkoutsView: React.FC = () => {
         </button>
 
         <button
+          onClick={() => setActiveViewTab('LOGGER')}
+          className={`min-h-[42px] px-4 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+            activeViewTab === 'LOGGER'
+              ? 'bg-purple-700 text-white shadow-sm'
+              : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          <Play className="w-4 h-4 text-emerald-500" />
+          <span>Workout Logger Mobile</span>
+        </button>
+
+        <button
           onClick={() => setActiveViewTab('EXERCISES_LIBRARY')}
           className={`px-4 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
             activeViewTab === 'EXERCISES_LIBRARY'
@@ -212,6 +230,8 @@ export const WorkoutsView: React.FC = () => {
       {/* Dynamic Tab Body */}
       {activeViewTab === 'EXERCISES_LIBRARY' ? (
         <ExerciseLibraryView />
+      ) : activeViewTab === 'LOGGER' && activeProgram ? (
+        <MobileWorkoutLogger program={activeProgram} />
       ) : activeViewTab === 'NUTRITION' ? (
         /* Active Nutrition Plan Overview */
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">

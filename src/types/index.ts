@@ -177,14 +177,22 @@ export type EquipmentType =
   | 'MACCHINARIO'
   | 'CORPO_LIBERO';
 
+export type JointType = 'MULTI_JOINT' | 'SINGLE_JOINT';
+export type ResistanceProfileBias = 'LENGTHENED' | 'MID_RANGE' | 'SHORTENED';
+
 export interface ExerciseLibraryItem {
   id: string;
   name: string;
   muscle_group: MuscleGroup;
+  primary_muscle: MuscleGroup;
+  secondary_muscle?: MuscleGroup;
+  joint_type: JointType;
+  resistance_profile_bias: ResistanceProfileBias;
   equipment: EquipmentType;
   description: string;
   key_points: string[];
   video_url: string; // YouTube embed or custom URL
+  youtube_video_id?: string;
   default_sets: number;
   default_reps: string;
   default_rir: number;
@@ -197,6 +205,11 @@ export interface ExerciseItem {
   id: string;
   name: string;
   muscle_group?: MuscleGroup;
+  primary_muscle?: MuscleGroup;
+  secondary_muscle?: MuscleGroup;
+  joint_type?: JointType;
+  resistance_profile_bias?: ResistanceProfileBias;
+  youtube_video_id?: string;
   sets: number;
   reps: string;
   rir: number; // Reps In Reserve
@@ -384,4 +397,277 @@ export interface CheckInEmailDispatchLog {
   trigger_type: CheckInSchedulerTriggerType;
   error_message?: string;
 }
+
+// ============================================================================
+// MODULE 1: MOBILE WORKOUT LOGGER, DOMS & TRAINING ANALYTICS
+// ============================================================================
+export interface WorkoutSetLog {
+  id: string;
+  exercise_id: string;
+  exercise_name: string;
+  primary_muscle: MuscleGroup;
+  secondary_muscle?: MuscleGroup;
+  joint_type: JointType;
+  resistance_profile_bias: ResistanceProfileBias;
+  set_number: number;
+  weight_kg: number;
+  reps: number;
+  rpe_rir: number; // 0-10 (RIR or RPE)
+  completed: boolean;
+}
+
+export interface WorkoutSessionLog {
+  id: string;
+  athlete_id: string;
+  program_id: string;
+  split_day: string;
+  session_date: string; // YYYY-MM-DD
+  started_at: string;
+  ended_at: string;
+  session_duration_minutes: number;
+  pre_workout_effort: number; // 1-10
+  intra_workout_effort: number; // 1-10
+  post_workout_effort: number; // 1-10
+  total_tonnage_kg: number;
+  sets: WorkoutSetLog[];
+  notes?: string;
+}
+
+export interface DomsMuscleScore {
+  muscle: MuscleGroup;
+  soreness: number; // 1-10
+}
+
+export interface MorningDomsLog {
+  id: string;
+  athlete_id: string;
+  workout_session_id?: string;
+  log_date: string; // YYYY-MM-DD
+  has_soreness: boolean;
+  muscle_scores: DomsMuscleScore[];
+  created_at: string;
+}
+
+// ============================================================================
+// MODULE 2: GAMIFICATION, STREAKS & EDUCATIONAL DRIP COURSES
+// ============================================================================
+export type RecordScope = 'EXERCISE' | 'SESSION' | 'WEEK' | 'YEAR';
+export type RecordType = 'MAX_WEIGHT' | 'EST_1RM' | 'VOLUME';
+
+export interface GamificationRecord {
+  id: string;
+  athlete_id: string;
+  record_type: RecordType;
+  scope: RecordScope;
+  exercise_name?: string;
+  value: number;
+  unit: string;
+  achieved_at: string;
+  celebrated: boolean;
+}
+
+export interface StepStreakState {
+  athlete_id: string;
+  current_streak_days: number;
+  best_streak_days: number;
+  daily_target_steps: number;
+  today_steps: number;
+  last_celebrated_streak: number;
+}
+
+export interface EducationalDripModule {
+  id: string;
+  day_offset: number;
+  category: 'FAT_LOSS' | 'MEAL_PREP' | 'WARM_UP' | 'SLEEP' | 'HORMONES';
+  title_it: string;
+  title_en: string;
+  summary_it: string;
+  summary_en: string;
+  youtube_video_id?: string;
+  duration_min: number;
+  completed_by_athlete_ids: string[];
+}
+
+// ============================================================================
+// MODULE 3: PUBLIC Q&A BOARD / COMMUNITY FAQ
+// ============================================================================
+export type QaTopic = 'Training' | 'Nutrition' | 'Habits' | 'Recovery' | 'Logistics';
+
+export interface QaReply {
+  id: string;
+  thread_id: string;
+  author_id: string;
+  author_name: string;
+  author_role: UserRole;
+  body: string;
+  is_official_coach_reply: boolean;
+  created_at: string;
+}
+
+export interface QaThread {
+  id: string;
+  author_id: string;
+  author_name: string;
+  topic: QaTopic;
+  title: string;
+  body: string;
+  is_pinned: boolean;
+  created_at: string;
+  replies: QaReply[];
+}
+
+// ============================================================================
+// MODULE 4 & 5: NUTRITION HAND-PORTIONS, FOOD SPECTRUM, SATIETY & RECIPES
+// ============================================================================
+export interface HandPortionEquivalents {
+  palms_protein: number;
+  thumbs_fats: number;
+  cupped_hands_carbs: number;
+  fists_veggies: number;
+}
+
+export type FoodSpectrumTier = 'GREEN_EAT_MORE' | 'YELLOW_EAT_SOME' | 'RED_EAT_LESS';
+export type FoodMacroCategory = 'PROTEIN' | 'CARBS' | 'FATS' | 'VEGGIES';
+
+export interface FoodSpectrumItem {
+  id: string;
+  category: FoodMacroCategory;
+  tier: FoodSpectrumTier;
+  name_it: string;
+  name_en: string;
+  portion_hint_it: string;
+  portion_hint_en: string;
+}
+
+export interface HungerSatietyTarget {
+  meal_type: 'MAIN_MEAL' | 'SNACK';
+  target_pre_hunger: number; // e.g., 8/10 main, 7/10 snack
+  target_post_satiety: number; // e.g., 7/10 main, 7/10 snack
+}
+
+export interface MealSatietyLog {
+  id: string;
+  athlete_id: string;
+  meal_label: string;
+  meal_type: 'MAIN_MEAL' | 'SNACK';
+  pre_meal_hunger: number; // 1-10
+  post_meal_satiety?: number; // 1-10
+  logged_at: string;
+  satiety_prompt_due_at: string;
+  satiety_completed_at?: string;
+}
+
+export type RecipeMealType = 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK';
+export type RecipeTag =
+  | 'NO_COOK'
+  | 'HEALTHY_SNACKS'
+  | 'HIGH_PROTEIN'
+  | 'MEDITERRANEAN'
+  | 'VEGAN'
+  | 'VEGETARIAN';
+
+export interface RecipeItem {
+  id: string;
+  title_it: string;
+  title_en: string;
+  meal_type: RecipeMealType;
+  tags: RecipeTag[];
+  prep_minutes: number;
+  kcal: number;
+  protein_g: number;
+  carbs_g: number;
+  fats_g: number;
+  hand_portions: HandPortionEquivalents;
+  ingredients_it: string[];
+  ingredients_en: string[];
+  steps_it: string;
+  steps_en: string;
+  storage_tip_it: string;
+  storage_tip_en: string;
+}
+
+// ============================================================================
+// MODULE 6: HABIT TRACKER & PERSONAL TOOLBOX HUB
+// ============================================================================
+export interface HabitItem {
+  id: string;
+  athlete_id: string;
+  title_it: string;
+  title_en: string;
+  weekly_target_days: number;
+  category: 'MOVEMENT' | 'HYDRATION' | 'SLEEP' | 'NUTRITION' | 'MINDSET';
+}
+
+export interface HabitDailyLog {
+  id: string;
+  athlete_id: string;
+  log_date: string; // YYYY-MM-DD
+  completed_habit_ids: string[];
+  evening_energy_score?: number; // 1-10
+  evening_challenge_note?: string;
+}
+
+export interface ToolboxResource {
+  id: string;
+  code: string;
+  title_it: string;
+  title_en: string;
+  subtitle_it: string;
+  subtitle_en: string;
+  type: 'CHALLENGE' | 'GUIDE' | 'WORKSHEET' | 'AUDIO';
+  bullets_it: string[];
+  bullets_en: string[];
+  interactive_questions?: Array<{
+    id: string;
+    label_it: string;
+    label_en: string;
+  }>;
+  audio_script_it?: string;
+  audio_script_en?: string;
+}
+
+// ============================================================================
+// MODULE 7: QUALIFYING ONBOARDING FUNNEL & 2-TIER FEATURE FLAGS
+// ============================================================================
+export type SubscriptionTier = 'TIER_1_ENTRY' | 'TIER_2_VIP';
+export type OnboardingStatus =
+  | 'NOT_STARTED'
+  | 'TIER_1_ACTIVE'
+  | 'PENDING_COACH_REVIEW'
+  | 'DISCOVERY_CALL_INVITED'
+  | 'TIER_2_APPROVED';
+
+export interface TierFeatureFlags {
+  can_access_workout_logger: boolean;
+  can_access_recipes_and_hand_portions: boolean;
+  can_access_community_qa: boolean;
+  can_access_toolbox_habits: boolean;
+  can_access_1on1_macrocycle: boolean;
+  can_submit_7step_checkin: boolean;
+  can_upload_execution_videos: boolean;
+}
+
+export interface OnboardingApplication {
+  id: string;
+  applicant_id: string;
+  applicant_name: string;
+  applicant_email: string;
+  selected_tier: SubscriptionTier;
+  status: OnboardingStatus;
+  primary_goal: string;
+  training_experience: string;
+  weekly_availability_days: number;
+  injuries_or_notes: string;
+  commitment_score: number; // 1-10
+  stripe_checkout_completed: boolean;
+  discovery_call_link?: string;
+  submitted_at: string;
+  updated_at: string;
+}
+
+// ============================================================================
+// MODULE 8: MULTI-LANGUAGE (i18n)
+// ============================================================================
+export type SupportedLocale = 'it' | 'en' | 'es' | 'de' | 'fr';
+
 

@@ -10,6 +10,8 @@ import {
   MuscleGroup,
   EquipmentType,
   ExerciseItem,
+  JointType,
+  ResistanceProfileBias,
 } from '../../types';
 import {
   Dumbbell,
@@ -95,9 +97,13 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
   // Form Fields
   const [name, setName] = useState('');
   const [muscleGroup, setMuscleGroup] = useState<MuscleGroup>('PETTORALI');
+  const [secondaryMuscle, setSecondaryMuscle] = useState<MuscleGroup | ''>('');
+  const [jointType, setJointType] = useState<JointType>('MULTI_JOINT');
+  const [resistanceProfileBias, setResistanceProfileBias] = useState<ResistanceProfileBias>('LENGTHENED');
   const [equipment, setEquipment] = useState<EquipmentType>('MANUBRI');
   const [description, setDescription] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
+  const [youtubeVideoId, setYoutubeVideoId] = useState('IHpn5VqLlG4');
   const [keyPoints, setKeyPoints] = useState<string[]>(['']);
   const [defaultSets, setDefaultSets] = useState(4);
   const [defaultReps, setDefaultReps] = useState('6-8');
@@ -139,9 +145,13 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
     setEditingExerciseId(null);
     setName('');
     setMuscleGroup('PETTORALI');
+    setSecondaryMuscle('SPALLE');
+    setJointType('MULTI_JOINT');
+    setResistanceProfileBias('LENGTHENED');
     setEquipment('MANUBRI');
     setDescription('');
-    setVideoUrl('https://www.youtube.com/embed/8iPEnn-ltC8');
+    setYoutubeVideoId('IHpn5VqLlG4');
+    setVideoUrl('https://www.youtube.com/embed/IHpn5VqLlG4');
     setKeyPoints(['Scapole addotte e depresse', 'ROM completo', 'Fermo di 1s']);
     setDefaultSets(4);
     setDefaultReps('6-8');
@@ -153,9 +163,13 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
   const handleOpenEdit = (ex: ExerciseLibraryItem) => {
     setEditingExerciseId(ex.id);
     setName(ex.name);
-    setMuscleGroup(ex.muscle_group);
+    setMuscleGroup(ex.primary_muscle || ex.muscle_group);
+    setSecondaryMuscle(ex.secondary_muscle || '');
+    setJointType(ex.joint_type || 'MULTI_JOINT');
+    setResistanceProfileBias(ex.resistance_profile_bias || 'LENGTHENED');
     setEquipment(ex.equipment);
     setDescription(ex.description);
+    setYoutubeVideoId(ex.youtube_video_id || 'IHpn5VqLlG4');
     setVideoUrl(ex.video_url);
     setKeyPoints(ex.key_points.length > 0 ? ex.key_points : ['']);
     setDefaultSets(ex.default_sets || 4);
@@ -170,15 +184,23 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
     if (!name.trim()) return;
 
     const cleanedPoints = keyPoints.map((k) => k.trim()).filter(Boolean);
+    const resolvedEmbedUrl = youtubeVideoId.trim()
+      ? `https://www.youtube.com/embed/${youtubeVideoId.trim()}`
+      : videoUrl;
 
     if (editingExerciseId) {
       updateExerciseInLibrary(editingExerciseId, {
         name,
         muscle_group: muscleGroup,
+        primary_muscle: muscleGroup,
+        secondary_muscle: secondaryMuscle || undefined,
+        joint_type: jointType,
+        resistance_profile_bias: resistanceProfileBias,
         equipment,
         description,
         key_points: cleanedPoints,
-        video_url: videoUrl,
+        video_url: resolvedEmbedUrl,
+        youtube_video_id: youtubeVideoId.trim() || undefined,
         default_sets: defaultSets,
         default_reps: defaultReps,
         default_rir: defaultRir,
@@ -189,10 +211,15 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
       addExerciseToLibrary({
         name,
         muscle_group: muscleGroup,
+        primary_muscle: muscleGroup,
+        secondary_muscle: secondaryMuscle || undefined,
+        joint_type: jointType,
+        resistance_profile_bias: resistanceProfileBias,
         equipment,
         description,
         key_points: cleanedPoints,
-        video_url: videoUrl,
+        video_url: resolvedEmbedUrl,
+        youtube_video_id: youtubeVideoId.trim() || undefined,
         default_sets: defaultSets,
         default_reps: defaultReps,
         default_rir: defaultRir,
@@ -231,6 +258,11 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
       id: `ex-${Date.now()}`,
       name: quickAddExercise.name,
       muscle_group: quickAddExercise.muscle_group,
+      primary_muscle: quickAddExercise.primary_muscle || quickAddExercise.muscle_group,
+      secondary_muscle: quickAddExercise.secondary_muscle,
+      joint_type: quickAddExercise.joint_type,
+      resistance_profile_bias: quickAddExercise.resistance_profile_bias,
+      youtube_video_id: quickAddExercise.youtube_video_id,
       sets: quickSets,
       reps: quickReps,
       rir: quickRir,
@@ -424,12 +456,12 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
               <div className="p-5 border-b border-slate-100 space-y-3">
                 <div className="flex items-center justify-between gap-2">
                   <span
-                    className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border ${color.bg} ${color.text} ${color.border}`}
+                    className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded border ${color.bg} ${color.text} ${color.border}`}
                   >
-                    {MUSCLE_GROUP_LABELS[ex.muscle_group]}
+                    {MUSCLE_GROUP_LABELS[ex.primary_muscle || ex.muscle_group]}
                   </span>
 
-                  <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
+                  <span className="text-[10px] font-bold text-slate-500">
                     {EQUIPMENT_LABELS[ex.equipment]}
                   </span>
                 </div>
@@ -437,6 +469,11 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
                 <h3 className="text-base font-extrabold text-slate-900 leading-snug group-hover:text-purple-700 transition-colors">
                   {ex.name}
                 </h3>
+
+                <div className="text-[11px] font-mono-tabular text-slate-500">
+                  {ex.joint_type || 'MULTI_JOINT'} · {ex.resistance_profile_bias || 'LENGTHENED'}
+                  {ex.secondary_muscle ? ` · Sec: ${ex.secondary_muscle}` : ''}
+                </div>
 
                 <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">
                   {ex.description}
@@ -599,11 +636,11 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
                 />
               </div>
 
-              {/* Muscle Group & Equipment */}
+              {/* Muscle Group, Secondary, Joint Type, Profile & Equipment */}
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block font-bold text-slate-800 mb-1">
-                    Distretto Muscolare Primario *
+                    Muscolo Primario (primary_muscle) *
                   </label>
                   <select
                     value={muscleGroup}
@@ -619,6 +656,53 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
                 </div>
 
                 <div>
+                  <label className="block font-bold text-slate-800 mb-1">
+                    Muscolo Secondario (secondary_muscle)
+                  </label>
+                  <select
+                    value={secondaryMuscle}
+                    onChange={(e) => setSecondaryMuscle((e.target.value as MuscleGroup) || '')}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                  >
+                    <option value="">Nessuno</option>
+                    {(Object.keys(MUSCLE_GROUP_LABELS) as MuscleGroup[]).map((mg) => (
+                      <option key={mg} value={mg}>
+                        {MUSCLE_GROUP_LABELS[mg]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-800 mb-1">
+                    Tipologia Articolare (joint_type) *
+                  </label>
+                  <select
+                    value={jointType}
+                    onChange={(e) => setJointType(e.target.value as JointType)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                  >
+                    <option value="MULTI_JOINT">MULTI_JOINT (Multiarticolare)</option>
+                    <option value="SINGLE_JOINT">SINGLE_JOINT (Monoarticolare)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-800 mb-1">
+                    Profilo di Resistenza (resistance_profile_bias) *
+                  </label>
+                  <select
+                    value={resistanceProfileBias}
+                    onChange={(e) => setResistanceProfileBias(e.target.value as ResistanceProfileBias)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                  >
+                    <option value="LENGTHENED">LENGTHENED (Allungamento)</option>
+                    <option value="MID_RANGE">MID_RANGE (Medio Range)</option>
+                    <option value="SHORTENED">SHORTENED (Accorciamento)</option>
+                  </select>
+                </div>
+
+                <div className="sm:col-span-2">
                   <label className="block font-bold text-slate-800 mb-1">
                     Attrezzatura / Meccanica *
                   </label>
@@ -697,22 +781,39 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
                 </div>
               </div>
 
-              {/* Video URL & Embed Preview */}
-              <div>
-                <label className="block font-bold text-slate-800 mb-1">
-                  Video Dimostrativo Ufficiale (YouTube Embed o URL) *
-                </label>
-                <input
-                  type="url"
-                  required
-                  placeholder="https://www.youtube.com/embed/..."
-                  value={videoUrl}
-                  onChange={(e) => setVideoUrl(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-mono text-xs focus:outline-none focus:ring-2 focus:ring-purple-600"
-                />
-                <span className="text-[10px] text-slate-400 mt-1 block">
-                  Supporta link YouTube Embed, video non in elenco, Loom o link diretti per visualizzazione istantanea.
-                </span>
+              {/* Video URL & YouTube ID */}
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-slate-800 mb-1">
+                    YouTube Video ID (Predefiniti: IHpn5VqLlG4, c-fUldThukk, xI_L4M3KDQo)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="IHpn5VqLlG4"
+                    value={youtubeVideoId}
+                    onChange={(e) => {
+                      setYoutubeVideoId(e.target.value);
+                      if (e.target.value.trim()) {
+                        setVideoUrl(`https://www.youtube.com/embed/${e.target.value.trim()}`);
+                      }
+                    }}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-mono text-xs focus:outline-none focus:ring-2 focus:ring-purple-600"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-800 mb-1">
+                    Video Dimostrativo Ufficiale (Embed URL) *
+                  </label>
+                  <input
+                    type="url"
+                    required
+                    placeholder="https://www.youtube.com/embed/..."
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-mono text-xs focus:outline-none focus:ring-2 focus:ring-purple-600"
+                  />
+                </div>
+              </div>
 
                 {videoUrl && (
                   <div className="mt-3 p-3 bg-slate-900 rounded-xl overflow-hidden border border-slate-800">
@@ -730,7 +831,6 @@ export const ExerciseLibraryView: React.FC<ExerciseLibraryViewProps> = ({
                     </div>
                   </div>
                 )}
-              </div>
 
               {/* Default Sets, Reps, RIR, Rest */}
               <div className="p-4 bg-purple-50/60 rounded-xl border border-purple-200/80 space-y-2">

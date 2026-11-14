@@ -9,27 +9,20 @@ import {
   ArrowRight,
   CheckCircle2,
   FileSpreadsheet,
-  Activity,
   ShieldCheck,
   Send,
   Zap,
   Edit3,
   Dumbbell,
-  Clock,
-  Flame,
-  Award,
+  Sparkles,
 } from 'lucide-react';
-import heroBannerImg from '../../assets/images/hero_bodybuilding_aesthetic_1794409018984.jpg';
-import coachPortraitImg from '../../assets/images/coach_francesco_portrait_1794409019780.jpg';
-import athleteSquatImg from '../../assets/images/athlete_training_squat_1794409022012.jpg';
-import telemetryHubImg from '../../assets/images/bodybuilding_telemetry_hub_1794409020931.jpg';
 
 interface LandingPageProps {
   onOpenCmsModal?: () => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onOpenCmsModal }) => {
-  const { landingContent, currentUser, setCurrentRoute, theme, setIsCookieModalOpen } = useApp();
+  const { landingContent, currentUser, setCurrentRoute, theme, setIsCookieModalOpen, setIsOnboardingModalOpen } = useApp();
 
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
@@ -80,20 +73,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenCmsModal }) => {
 
               <div className="flex flex-wrap items-center gap-4 pt-2">
                 <button
-                  onClick={() => setCurrentRoute('/app/dashboard')}
-                  className="px-7 py-4 rounded-xl text-white font-extrabold text-sm shadow-xl hover:shadow-purple-900/40 transition-all flex items-center gap-2"
+                  onClick={() => setIsOnboardingModalOpen(true)}
+                  className="px-7 py-4 rounded-xl text-white font-extrabold text-sm shadow-xl hover:shadow-purple-900/40 transition-all flex items-center gap-2 cursor-pointer"
                   style={{ backgroundColor: theme.accent_primary }}
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Inizia Questionario (Entry €19 / VIP)
+                </button>
+
+                <button
+                  onClick={() => setCurrentRoute('/app/dashboard')}
+                  className="px-6 py-4 rounded-xl border border-slate-700 hover:border-slate-600 bg-slate-900/60 hover:bg-slate-800 text-slate-200 font-semibold text-sm transition-colors flex items-center gap-2 cursor-pointer"
                 >
                   {landingContent.hero_cta_text}
                   <ArrowRight className="w-4 h-4" />
                 </button>
-
-                <a
-                  href="#metodo"
-                  className="px-6 py-4 rounded-xl border border-slate-700 hover:border-slate-600 bg-slate-900/60 hover:bg-slate-800 text-slate-200 font-semibold text-sm transition-colors"
-                >
-                  Esplora il Protocollo
-                </a>
               </div>
 
               {/* Verified Metrics Row */}
@@ -108,13 +102,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenCmsModal }) => {
                   <span className="block text-2xl sm:text-3xl font-black text-white font-mono-tabular">
                     7 Aree
                   </span>
-                  <span className="text-xs text-slate-400 font-medium">Check-In Clinico</span>
+                  <span className="text-xs text-slate-400 font-medium">Check-In & DOMS</span>
                 </div>
                 <div>
                   <span className="block text-2xl sm:text-3xl font-black text-white font-mono-tabular">
-                    USB .FIT
+                    16 Ricette
                   </span>
-                  <span className="text-xs text-slate-400 font-medium">Garmin Nativo</span>
+                  <span className="text-xs text-slate-400 font-medium">Porzioni a Mano & Sazietà</span>
                 </div>
               </div>
             </div>
@@ -156,7 +150,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenCmsModal }) => {
               I 4 Pilastri Operativi di Francesco Pavone
             </h2>
             <p className="text-sm text-slate-400 mt-3 leading-relaxed">
-              Il coaching non è un foglio statico di esercizi: è un ciclo continuo di misurazione dei carichi, telemetria cardiaca oggettiva e bilancio energetico.
+              Il coaching non è un foglio statico di esercizi: è un ciclo continuo di misurazione dei carichi, percezione dello sforzo, nutrizione a porzioni e abitudini quotidiane.
             </p>
           </div>
 
@@ -183,17 +177,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenCmsModal }) => {
             <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800/80 hover:border-purple-600/50 transition-all shadow-sm flex flex-col justify-between">
               <div>
                 <div className="w-12 h-12 rounded-xl bg-indigo-950/60 border border-indigo-800/60 flex items-center justify-center text-indigo-400 mb-5">
-                  <Activity className="w-6 h-6" />
+                  <Dumbbell className="w-6 h-6" />
                 </div>
                 <h3 className="text-base font-bold text-white mb-2">
-                  Telemetria Garmin (.FIT via USB)
+                  Workout Logger & Analytics DOMS
                 </h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Connessione diretta USB: il parser nativo decodifica dai file binari .FIT frequenza cardiaca media e massima, calorie reali e durata per un bilancio energetico senza stime.
+                  Tracking mobile di serie, kg, RIR, durata sessione e profilo di resistenza (Lengthened / Mid / Shortened), con pop-up DOMS mattutino e celebri PR automatici.
                 </p>
               </div>
               <div className="mt-6 pt-4 border-t border-slate-900 text-[11px] font-mono-tabular text-indigo-400 font-semibold">
-                Magic Bytes & CRC16 Validati
+                Tonnellaggio & e1RM in Tempo Reale
               </div>
             </div>
 

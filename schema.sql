@@ -239,12 +239,242 @@ SELECT
 FROM daily_logs d
 GROUP BY d.athlete_id, TO_CHAR(d.log_date, 'IYYY-"W"IW');
 
--- 10. ROW LEVEL SECURITY (RLS) POLICIES
+-- 10. ROW LEVEL SECURITY (RLS) POLICIES (BASE)
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE daily_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE weekly_checkins ENABLE ROW LEVEL SECURITY;
-ALTER TABLE garmin_fit_activities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE macrocycle_phases ENABLE ROW LEVEL SECURITY;
 
--- Coach has full access to all athlete records
--- Athlete can only read/update their own records
+-- ============================================================================
+-- 11. MODULE 1 UPGRADE: EXERCISE TAXONOMY, WORKOUT LOGGER & MORNING DOMS
+-- ============================================================================
+CREATE TYPE joint_type_enum AS ENUM ('MULTI_JOINT', 'SINGLE_JOINT');
+CREATE TYPE resistance_profile_bias_enum AS ENUM ('LENGTHENED', 'MID_RANGE', 'SHORTENED');
+
+CREATE TABLE IF NOT EXISTS exercises (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name VARCHAR(150) NOT NULL,
+  primary_muscle VARCHAR(60) NOT NULL,
+  secondary_muscle VARCHAR(60),
+  joint_type joint_type_enum NOT NULL DEFAULT 'MULTI_JOINT',
+  resistance_profile_bias resistance_profile_bias_enum NOT NULL DEFAULT 'MID_RANGE',
+  equipment VARCHAR(60) NOT NULL,
+  description TEXT,
+  key_points JSONB DEFAULT '[]'::jsonb,
+  youtube_video_id VARCHAR(32),
+  tutorial_url TEXT,
+  created_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS workout_sessions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  athlete_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  program_id UUID REFERENCES workout_programs(id) ON DELETE SET NULL,
+  split_day VARCHAR(80) NOT NULL,
+  started_at TIMESTAMPTZ NOT NULL,
+  ended_at TIMESTAMPTZ NOT NULL,
+  session_duration_minutes INT NOT NULL,
+  effort_pre INT CHECK (effort_pre BETWEEN 1 AND 10),
+  effort_intra INT CHECK (effort_intra BETWEEN 1 AND 10),
+  effort_post INT CHECK (effort_post BETWEEN 1 AND 10),
+  total_tonnage_kg NUMERIC(10,2) DEFAULT 0,
+  total_working_sets INT DEFAULT 0,
+  iso_week VARCHAR(10) NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS workout_set_logs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  session_id UUID NOT NULL REFERENCES workout_sessions(id) ON DELETE CASCADE,
+  athlete_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  exercise_id UUID REFERENCES exercises(id) ON DELETE SET NULL,
+  exercise_name VARCHAR(150) NOT NULL,
+  primary_muscle VARCHAR(60) NOT NULL,
+  secondary_muscle VARCHAR(60),
+  joint_type joint_type_enum NOT NULL DEFAULT 'MULTI_JOINT',
+  resistance_profile_bias resistance_profile_bias_enum NOT NULL DEFAULT 'MID_RANGE',
+  set_number INT NOT NULL,
+  weight_kg NUMERIC(6,2) NOT NULL,
+  reps INT NOT NULL,
+  rpe_rir NUMERIC(3,1) NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS morning_doms_logs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  athlete_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  workout_session_id UUID REFERENCES workout_sessions(id) ON DELETE SET NULL,
+  logged_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  has_soreness BOOLEAN NOT NULL DEFAULT FALSE,
+  muscle_soreness JSONB NOT NULL DEFAULT '{}'::jsonb, -- { "PETTORALI": 7, "TRICIPITI": 5 }
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ============================================================================
+-- 12. MODULE 2 UPGRADE: GAMIFICATION RECORDS & DRIP TOUCHPOINTS
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS gamification_records (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  athlete_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  record_scope VARCHAR(30) NOT NULL, -- 'PR_1RM' | 'VOLUME_EXERCISE' | 'VOLUME_SESSION' | 'VOLUME_WEEK' | 'VOLUME_YEAR' | 'STEP_STREAK'
+  exercise_name VARCHAR(150),
+  metric_value NUMERIC(12,2) NOT NULL,
+  achieved_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS educational_drip_progress (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  athlete_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  module_slug VARCHAR(80) NOT NULL,
+  completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT uq_athlete_drip UNIQUE (athlete_id, module_slug)
+);
+
+-- ============================================================================
+-- 13. MODULE 3 UPGRADE: PUBLIC COMMUNITY Q&A / FAQ BOARD
+-- ============================================================================
+CREATE TYPE qa_topic_enum AS ENUM ('Training', 'Nutrition', 'Habits', 'Recovery', 'Logistics');
+
+CREATE TABLE IF NOT EXISTS community_qa_threads (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  author_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  topic qa_topic_enum NOT NULL DEFAULT 'Training',
+  title VARCHAR(200) NOT NULL,
+  body TEXT NOT NULL,
+  is_pinned BOOLEAN NOT NULL DEFAULT FALSE,
+  is_answered BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS community_qa_replies (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  thread_id UUID NOT NULL REFERENCES community_qa_threads(id) ON DELETE CASCADE,
+  author_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  is_official_coach_reply BOOLEAN NOT NULL DEFAULT FALSE,
+  body TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ============================================================================
+-- 14. MODULE 4 & 5 UPGRADE: NUTRITION SATIETY LOGS & RECIPE DATABASE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS nutrition_satiety_logs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  athlete_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  meal_type VARCHAR(20) NOT NULL CHECK (meal_type IN ('MAIN_MEAL', 'SNACK')),
+  meal_label VARCHAR(100) NOT NULL,
+  target_hunger INT NOT NULL DEFAULT 8,
+  target_satiety INT NOT NULL DEFAULT 7,
+  actual_pre_hunger INT CHECK (actual_pre_hunger BETWEEN 1 AND 10),
+  actual_post_satiety INT CHECK (actual_post_satiety BETWEEN 1 AND 10),
+  logged_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  satiety_logged_at TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS recipes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title VARCHAR(150) NOT NULL,
+  category VARCHAR(20) NOT NULL CHECK (category IN ('Breakfast', 'Lunch', 'Dinner', 'Snack')),
+  prep_time_min INT NOT NULL,
+  calories_kcal INT NOT NULL,
+  protein_g INT NOT NULL,
+  carbs_g INT NOT NULL,
+  fat_g INT NOT NULL,
+  tags JSONB DEFAULT '[]'::jsonb,
+  ingredients JSONB DEFAULT '[]'::jsonb,
+  instructions TEXT NOT NULL,
+  storage_tips TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ============================================================================
+-- 15. MODULE 6 UPGRADE: HABITS & PERSONAL TOOLBOX
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS habit_assignments (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  athlete_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  title VARCHAR(150) NOT NULL,
+  weekly_target INT NOT NULL DEFAULT 7,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS habit_daily_logs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  habit_id UUID NOT NULL REFERENCES habit_assignments(id) ON DELETE CASCADE,
+  athlete_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  log_date DATE NOT NULL,
+  completed BOOLEAN NOT NULL DEFAULT TRUE,
+  evening_energy INT CHECK (evening_energy BETWEEN 1 AND 10),
+  challenge_note TEXT,
+  CONSTRAINT uq_habit_date UNIQUE (habit_id, log_date)
+);
+
+-- ============================================================================
+-- 16. MODULE 7 UPGRADE: QUALIFYING ONBOARDING FUNNEL & 2-TIER ACCESS
+-- ============================================================================
+CREATE TYPE subscription_tier_enum AS ENUM ('ENTRY_APP', 'VIP_COACHING');
+CREATE TYPE onboarding_status_enum AS ENUM (
+  'QUESTIONNAIRE_DRAFT', 'ACTIVE_ENTRY_SUBSCRIPTION', 'PENDING_COACH_REVIEW', 'DISCOVERY_CALL_INVITED', 'APPROVED_VIP'
+);
+
+CREATE TABLE IF NOT EXISTS onboarding_applications (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  applicant_name VARCHAR(150) NOT NULL,
+  applicant_email VARCHAR(255) NOT NULL,
+  requested_tier subscription_tier_enum NOT NULL,
+  status onboarding_status_enum NOT NULL DEFAULT 'PENDING_COACH_REVIEW',
+  questionnaire_answers JSONB NOT NULL DEFAULT '{}'::jsonb,
+  feature_flags JSONB NOT NULL DEFAULT '{}'::jsonb,
+  discovery_call_link TEXT,
+  coach_notes TEXT,
+  submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  reviewed_at TIMESTAMPTZ
+);
+
+-- ============================================================================
+-- 17. SUPABASE ROW LEVEL SECURITY (RLS) ON ALL HEALTH, NUTRITION & DOMS TABLES
+-- ============================================================================
+ALTER TABLE exercises ENABLE ROW LEVEL SECURITY;
+ALTER TABLE workout_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE workout_set_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE morning_doms_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE gamification_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE educational_drip_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE community_qa_threads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE community_qa_replies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE nutrition_satiety_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE recipes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE habit_assignments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE habit_daily_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE onboarding_applications ENABLE ROW LEVEL SECURITY;
+
+-- Policy helper: Coach has full access; Athletes can only read/write their own health records
+CREATE POLICY "athlete_own_workout_sessions" ON workout_sessions
+  FOR ALL USING (auth.uid() = athlete_id OR EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'COACH'));
+
+CREATE POLICY "athlete_own_workout_set_logs" ON workout_set_logs
+  FOR ALL USING (auth.uid() = athlete_id OR EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'COACH'));
+
+CREATE POLICY "athlete_own_morning_doms_logs" ON morning_doms_logs
+  FOR ALL USING (auth.uid() = athlete_id OR EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'COACH'));
+
+CREATE POLICY "athlete_own_satiety_logs" ON nutrition_satiety_logs
+  FOR ALL USING (auth.uid() = athlete_id OR EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'COACH'));
+
+CREATE POLICY "athlete_own_habit_logs" ON habit_daily_logs
+  FOR ALL USING (auth.uid() = athlete_id OR EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'COACH'));
+
+CREATE POLICY "athlete_own_onboarding" ON onboarding_applications
+  FOR ALL USING (auth.uid() = user_id OR EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'COACH'));
+
+CREATE POLICY "public_read_community_qa" ON community_qa_threads
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "author_manage_community_qa" ON community_qa_threads
+  FOR INSERT WITH CHECK (auth.uid() = author_id);
+

@@ -16,7 +16,6 @@ import {
   ShieldCheck,
   Sparkles,
   Cookie,
-  AlertTriangle,
 } from 'lucide-react';
 
 export const LoginView: React.FC = () => {
@@ -26,6 +25,7 @@ export const LoginView: React.FC = () => {
     acceptGdprConsent,
     loginWithGoogle,
     setIsCookieModalOpen,
+    setIsOnboardingModalOpen,
     theme,
   } = useApp();
 
@@ -362,7 +362,7 @@ export const LoginView: React.FC = () => {
                   className="mt-0.5 rounded accent-purple-600"
                 />
                 <span className="text-[11px] text-slate-300 leading-relaxed">
-                  Presto il <strong>consenso esplicito (Art. 9 GDPR)</strong> al trattamento dei miei dati relativi alla salute, composizione corporea, telemetria Garmin e fotografie per le finalità esclusive del coaching.
+                  Presto il <strong>consenso esplicito (Art. 9 GDPR)</strong> al trattamento dei miei dati relativi alla salute, composizione corporea, log di allenamento, DOMS e fotografie per le finalità esclusive del coaching.
                 </span>
               </label>
             </div>
@@ -376,6 +376,16 @@ export const LoginView: React.FC = () => {
             </button>
           </form>
         )}
+
+        {/* Qualifying Onboarding CTA */}
+        <button
+          type="button"
+          onClick={() => setIsOnboardingModalOpen(true)}
+          className="w-full py-2.5 px-4 rounded-xl bg-slate-950 hover:bg-slate-800 border border-purple-500/40 text-purple-300 font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+          Compila Questionario Qualificante (Entry €19 / VIP)
+        </button>
 
         {/* Cookie Quick Preferences Link */}
         <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-500">

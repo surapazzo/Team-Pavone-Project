@@ -1,0 +1,67 @@
+{
+  "app": {
+    "brand": "Team Pavone",
+    "subtitle": "Entrenamiento y Culturismo Científico",
+    "publicSite": "Sitio Público",
+    "clientArea": "Área Clientes",
+    "login": "Iniciar Sesión",
+    "logout": "Cerrar Sesión",
+    "language": "Idioma"
+  },
+  "nav": {
+    "dashboard": "Panel",
+    "calendar": "Macrociclo",
+    "workouts": "Entrenamiento",
+    "nutrition": "Nutrición y Recetas",
+    "community": "Foro Q&A",
+    "toolbox": "Hábitos y Toolbox",
+    "checkin": "Check-In",
+    "privacy": "Privacidad y GDPR"
+  },
+  "workout": {
+    "loggerTitle": "Registro Móvil de Entrenamiento",
+    "startSession": "Iniciar Sesión",
+    "finishSession": "Finalizar y Guardar",
+    "weightKg": "Peso (kg)",
+    "reps": "Reps",
+    "rpeRir": "RPE / RIR",
+    "preEffort": "Esfuerzo Pre-Entreno (1-10)",
+    "intraEffort": "Esfuerzo Intra (1-10)",
+    "postEffort": "Esfuerzo Post (1-10)",
+    "domsTitle": "¿Tienes agujetas tras el entreno de ayer? ¿Dónde más?",
+    "domsSave": "Guardar DOMS Matutinos"
+  },
+  "nutrition": {
+    "title": "Nutrición, Porciones Manuales y Recetas",
+    "palms": "Palmas (Proteína)",
+    "thumbs": "Pulgares (Grasas)",
+    "cuppedHands": "Puñados (Carbohidratos)",
+    "fists": "Puños (Verduras)",
+    "foodSpectrum": "Espectro Alimentario",
+    "eatMore": "Comer Más",
+    "eatSome": "Comer Moderado",
+    "eatLess": "Comer Menos",
+    "hungerPre": "Hambre Pre-Comida (1-10)",
+    "satietyPost": "Saciedad Post-Comida +60m (1-10)"
+  },
+  "community": {
+    "title": "Tablón Público Q&A y FAQ",
+    "subtitle": "Bloque diario de 60 min del Coach Francesco Pavone",
+    "myQuestions": "Mis Preguntas",
+    "allTopics": "Todos los Temas",
+    "pinned": "Fijado",
+    "askPlaceholder": "Escribe tu consulta para el Coach..."
+  },
+  "toolbox": {
+    "title": "Hábitos Diarios y Caja de Herramientas",
+    "habitsTitle": "Registro de Hábitos Diarios",
+    "reflectionTitle": "Reflexión Nocturna",
+    "libraryTitle": "Guías y Hojas de Trabajo"
+  },
+  "onboarding": {
+    "title": "Cuestionario Inicial de Calificación",
+    "tier1": "Nivel 1 · App Entry-Level (€19/mes)",
+    "tier2": "Nivel 2 · Coaching VIP 1-on-1",
+    "pendingCoachReview": "Pendiente de Revisión"
+  }
+}

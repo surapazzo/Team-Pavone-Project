@@ -11,7 +11,11 @@ import {
   ChevronDown,
   Layers,
   Edit3,
+  Globe,
+  Sparkles,
 } from 'lucide-react';
+import { SUPPORTED_LOCALES, useTranslation } from '../../i18n/useTranslation';
+import { SupportedLocale } from '../../types';
 
 interface NavbarProps {
   onToggleSidebar?: () => void;
@@ -26,7 +30,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onOpenCmsModal 
     switchUserRole,
     athletes,
     theme,
+    locale,
+    setLocale,
+    setIsOnboardingModalOpen,
   } = useApp();
+  const { t } = useTranslation();
 
   const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
   const isAppRoute = currentRoute.startsWith('/app');
@@ -90,7 +98,34 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar, onOpenCmsModal 
         )}
 
         {/* Right Zone: Controls & Role Switcher */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0">
+          {/* Language Switcher (IT/EN/ES/DE/FR) */}
+          <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-900 border border-slate-700 text-xs">
+            <Globe className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+            <select
+              aria-label="Seleziona lingua"
+              value={locale}
+              onChange={(e) => setLocale(e.target.value as SupportedLocale)}
+              className="bg-transparent text-slate-200 font-bold text-xs focus:outline-none cursor-pointer"
+            >
+              {SUPPORTED_LOCALES.map((loc) => (
+                <option key={loc.code} value={loc.code} className="bg-slate-900 text-white">
+                  {loc.code.toUpperCase()}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {!isAppRoute && (
+            <button
+              onClick={() => setIsOnboardingModalOpen(true)}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-900 hover:bg-slate-800 border border-purple-500/40 text-purple-300 transition-colors cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+              <span>{t('onboarding.start_cta')}</span>
+            </button>
+          )}
+
           {/* If Coach on Landing: Quick CMS Drawer Trigger */}
           {!isAppRoute && isCoach && onOpenCmsModal && (
             <button

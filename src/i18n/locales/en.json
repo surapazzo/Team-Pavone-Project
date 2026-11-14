@@ -1,0 +1,67 @@
+{
+  "app": {
+    "brand": "Team Pavone",
+    "subtitle": "Scientific Coaching & Bodybuilding",
+    "publicSite": "Public Site",
+    "clientArea": "Client Area",
+    "login": "Sign In",
+    "logout": "Sign Out / Switch Account",
+    "language": "Language"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "calendar": "Macrocycle",
+    "workouts": "Training",
+    "nutrition": "Nutrition & Recipes",
+    "community": "Q&A Board",
+    "toolbox": "Habits & Toolbox",
+    "checkin": "Check-In",
+    "privacy": "Privacy & GDPR"
+  },
+  "workout": {
+    "loggerTitle": "Mobile Workout Logger",
+    "startSession": "Start Session",
+    "finishSession": "Complete & Save Session",
+    "weightKg": "Weight (kg)",
+    "reps": "Reps",
+    "rpeRir": "RPE / RIR",
+    "preEffort": "Pre-Workout Effort (1-10)",
+    "intraEffort": "Intra-Workout Effort (1-10)",
+    "postEffort": "Post-Workout Effort (1-10)",
+    "domsTitle": "Are you sore after yesterday's workout? If yes, where most?",
+    "domsSave": "Log Morning DOMS"
+  },
+  "nutrition": {
+    "title": "Nutrition, Hand Portions & Recipes",
+    "palms": "Palms (Protein)",
+    "thumbs": "Thumbs (Fats)",
+    "cuppedHands": "Cupped Hands (Cooked Carbs)",
+    "fists": "Fists (Veggies)",
+    "foodSpectrum": "Food Spectrum",
+    "eatMore": "Eat More",
+    "eatSome": "Eat Some",
+    "eatLess": "Eat Less",
+    "hungerPre": "Pre-Meal Hunger (1-10)",
+    "satietyPost": "Post-Meal Satiety +60m (1-10)"
+  },
+  "community": {
+    "title": "Public Q&A Board & FAQ",
+    "subtitle": "Coach Francesco Pavone's Daily 60-min Reply Block",
+    "myQuestions": "My Questions",
+    "allTopics": "All Topics",
+    "pinned": "Pinned",
+    "askPlaceholder": "Post a clear question for Coach Francesco..."
+  },
+  "toolbox": {
+    "title": "Daily Habits & Personal Toolbox",
+    "habitsTitle": "Daily Habit Tracker",
+    "reflectionTitle": "Evening Reflection (Energy & Challenges)",
+    "libraryTitle": "Interactive Guides & Worksheets"
+  },
+  "onboarding": {
+    "title": "Qualifying Onboarding Questionnaire",
+    "tier1": "Tier 1 · Entry-Level App (€19/mo)",
+    "tier2": "Tier 2 · VIP Coaching 1-on-1",
+    "pendingCoachReview": "Pending Coach Review"
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "app": {
+    "brand": "Team Pavone",
+    "subtitle": "Wissenschaftliches Coaching & Bodybuilding",
+    "publicSite": "Öffentliche Seite",
+    "clientArea": "Kundenbereich",
+    "login": "Anmelden",
+    "logout": "Abmelden",
+    "language": "Sprache"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "calendar": "Makrozyklus",
+    "workouts": "Training",
+    "nutrition": "Ernährung & Rezepte",
+    "community": "Q&A Forum",
+    "toolbox": "Gewohnheiten & Toolbox",
+    "checkin": "Check-In",
+    "privacy": "Datenschutz & DSGVO"
+  },
+  "workout": {
+    "loggerTitle": "Mobiler Workout-Logger",
+    "startSession": "Einheit starten",
+    "finishSession": "Abschließen & Speichern",
+    "weightKg": "Gewicht (kg)",
+    "reps": "Wdh.",
+    "rpeRir": "RPE / RIR",
+    "preEffort": "Anstrengung Vorher (1-10)",
+    "intraEffort": "Anstrengung Während (1-10)",
+    "postEffort": "Anstrengung Nachher (1-10)",
+    "domsTitle": "Hast du Muskelkater vom gestrigen Training? Wo am stärksten?",
+    "domsSave": "Morgen-DOMS speichern"
+  },
+  "nutrition": {
+    "title": "Ernährung, Handportionen & Rezepte",
+    "palms": "Handflächen (Protein)",
+    "thumbs": "Daumen (Fette)",
+    "cuppedHands": "Hohle Hände (Kohlenhydrate)",
+    "fists": "Fäuste (Gemüse)",
+    "foodSpectrum": "Lebensmittelspektrum",
+    "eatMore": "Mehr essen",
+    "eatSome": "Moderat essen",
+    "eatLess": "Weniger essen",
+    "hungerPre": "Hunger vor Mahlzeit (1-10)",
+    "satietyPost": "Sättigung nach Mahlzeit +60m (1-10)"
+  },
+  "community": {
+    "title": "Öffentliches Q&A Board & FAQ",
+    "subtitle": "Täglicher 60-Minuten-Antwortblock von Coach Francesco Pavone",
+    "myQuestions": "Meine Fragen",
+    "allTopics": "Alle Themen",
+    "pinned": "Angepinnt",
+    "askPlaceholder": "Stelle eine Frage an Coach Francesco..."
+  },
+  "toolbox": {
+    "title": "Tägliche Gewohnheiten & Personal Toolbox",
+    "habitsTitle": "Gewohnheits-Tracker",
+    "reflectionTitle": "Abendreflexion",
+    "libraryTitle": "Leitfäden & Arbeitsblätter"
+  },
+  "onboarding": {
+    "title": "Qualifizierungs-Fragebogen",
+    "tier1": "Stufe 1 · Entry-Level App (€19/Monat)",
+    "tier2": "Stufe 2 · VIP Coaching 1-on-1",
+    "pendingCoachReview": "Wartet auf Coach-Prüfung"
+  }
+}

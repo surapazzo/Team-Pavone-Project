@@ -17,7 +17,13 @@ import {
   ExternalLink,
   Edit3,
   Clock,
+  Utensils,
+  MessageSquare,
+  Sparkles,
+  Lock,
+  Award,
 } from 'lucide-react';
+import { useTranslation } from '../../i18n/useTranslation';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -36,40 +42,70 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onOpenCmsModa
     setSelectedAthleteId,
     theme,
     setIsEmailSchedulerModalOpen,
+    setIsOnboardingModalOpen,
+    featureFlags,
+    activeTier,
   } = useApp();
+  const { t } = useTranslation();
 
   const isCoach = currentUser.role === 'COACH';
 
   const navItems = [
     {
       route: '/app/dashboard',
-      label: 'Dashboard & KPI',
+      label: t('nav.dashboard'),
       icon: LayoutDashboard,
-      badge: isCoach ? 'Panoramica CX' : 'Telemetria',
+      badge: isCoach ? 'Analytics CX' : 'KPI & Streak',
+      locked: false,
     },
     {
       route: '/app/calendar',
-      label: 'Macrociclo & Fasi',
+      label: t('nav.calendar'),
       icon: Calendar,
-      badge: isCoach ? 'Planner' : '12+ Settimane',
+      badge: isCoach ? 'Planner' : 'VIP 1-to-1',
+      locked: !featureFlags.can_access_1on1_macrocycle,
     },
     {
       route: '/app/workouts',
-      label: 'Schede & Esercizi',
+      label: t('nav.workouts'),
       icon: Dumbbell,
-      badge: isCoach ? 'Costruttore & Video' : 'Libreria & Schede',
+      badge: isCoach ? 'Catalogo & Video' : 'Logger & Video',
+      locked: false,
+    },
+    {
+      route: '/app/nutrition',
+      label: t('nav.nutrition'),
+      icon: Utensils,
+      badge: 'Palmi & 16 Ricette',
+      locked: false,
+    },
+    {
+      route: '/app/community',
+      label: t('nav.community'),
+      icon: MessageSquare,
+      badge: 'FAQ Pubblica',
+      locked: false,
+    },
+    {
+      route: '/app/toolbox',
+      label: t('nav.toolbox'),
+      icon: Sparkles,
+      badge: 'Abitudini & Guide',
+      locked: false,
     },
     {
       route: '/app/check-in',
-      label: 'Check-In Settimanale',
+      label: t('nav.checkin'),
       icon: ClipboardCheck,
-      badge: isCoach ? 'Revisione' : '7 Aree',
+      badge: isCoach ? 'Revisione' : 'VIP 7 Aree',
+      locked: !featureFlags.can_submit_7step_checkin,
     },
     {
       route: '/app/privacy-gdpr',
-      label: 'Privacy & GDPR',
+      label: t('nav.privacy'),
       icon: Shield,
       badge: 'Art. 9 & Oblio',
+      locked: false,
     },
   ];
 
@@ -203,20 +239,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onOpenCmsModa
                       : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <Icon
-                      className={`w-4 h-4 transition-colors ${
+                      className={`w-4 h-4 shrink-0 transition-colors ${
                         isActive ? 'text-purple-400' : 'text-slate-500 group-hover:text-slate-300'
                       }`}
                     />
-                    <span>{item.label}</span>
+                    <span className="truncate">{item.label}</span>
                   </div>
 
                   <span
-                    className={`text-[10px] font-mono-tabular px-1.5 py-0.5 rounded transition-colors ${
+                    className={`text-[10px] font-mono-tabular px-1.5 py-0.5 rounded transition-colors flex items-center gap-1 shrink-0 ${
                       isActive ? 'bg-purple-800/80 text-purple-200' : 'text-slate-500'
                     }`}
                   >
+                    {item.locked && <Lock className="w-2.5 h-2.5 text-amber-400" />}
                     {item.badge}
                   </span>
                 </button>
@@ -226,7 +263,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onOpenCmsModa
         </div>
 
         {/* Bottom Section */}
-        <div className="p-4 border-t border-slate-800/80 space-y-2">
+        <div className="p-4 pb-20 lg:pb-4 border-t border-slate-800/80 space-y-2">
           {/* If Coach: Open CMS Console button */}
           {isCoach && onOpenCmsModal && (
             <button
@@ -241,6 +278,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onOpenCmsModa
             </button>
           )}
 
+          {/* Onboarding & Tier Trigger */}
+          <button
+            onClick={() => {
+              setIsOnboardingModalOpen(true);
+              onClose();
+            }}
+            className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 transition-colors"
+          >
+            <span className="flex items-center gap-2">
+              <Award className="w-3.5 h-3.5 text-amber-400" />
+              Piano & Questionario
+            </span>
+            <span className="text-[10px] text-purple-300 font-mono-tabular">
+              {activeTier === 'TIER_2_VIP' ? 'VIP' : 'Tier 1'}
+            </span>
+          </button>
+
           {/* Email Scheduler Direct Button */}
           <button
             onClick={() => {
@@ -253,7 +307,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onOpenCmsModa
               <Clock className="w-3.5 h-3.5 text-purple-400 group-hover:rotate-45 transition-transform" />
               Scheduler Email Check-In
             </span>
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           </button>
 
           <button

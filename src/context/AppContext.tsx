@@ -25,6 +25,23 @@ import {
   CheckInSchedulerTriggerType,
   ExerciseLibraryItem,
   ExerciseItem,
+  WorkoutSessionLog,
+  MorningDomsLog,
+  DomsMuscleScore,
+  GamificationRecord,
+  StepStreakState,
+  EducationalDripModule,
+  QaThread,
+  QaTopic,
+  HungerSatietyTarget,
+  MealSatietyLog,
+  HabitItem,
+  HabitDailyLog,
+  OnboardingApplication,
+  SubscriptionTier,
+  OnboardingStatus,
+  TierFeatureFlags,
+  SupportedLocale,
 } from '../types';
 import {
   INITIAL_THEME,
@@ -39,7 +56,20 @@ import {
   INITIAL_STRIPE_DATA,
   INITIAL_EXERCISE_LIBRARY,
 } from '../data/initialData';
-import { exportAthleteDataAsJson, exportAthleteLogsAsCsv } from '../services/securityAndGdpr';
+import {
+  INITIAL_WORKOUT_SESSIONS,
+  INITIAL_MORNING_DOMS,
+  INITIAL_GAMIFICATION_RECORDS,
+  INITIAL_STEP_STREAK,
+  INITIAL_EDUCATIONAL_DRIP_MODULES,
+  INITIAL_QA_THREADS,
+  INITIAL_HUNGER_TARGETS,
+  INITIAL_SATIETY_LOGS,
+  INITIAL_HABITS,
+  INITIAL_HABIT_LOGS,
+  INITIAL_ONBOARDING_APPLICATIONS,
+} from '../data/upgradeSeedData';
+import { exportAthleteDataAsJson, exportAthleteLogsAsCsv, sanitizeUserInput } from '../services/securityAndGdpr';
 import {
   DEFAULT_SCHEDULER_CONFIG,
   INITIAL_DISPATCH_LOGS,
@@ -69,7 +99,7 @@ interface AppContextType {
   currentRoute: string;
   isPreMergeGateOpen: boolean;
   isThemeEditorOpen: boolean;
-  
+
   // Navigation & Role Actions
   setCurrentRoute: (route: string) => void;
   switchUserRole: (role: UserRole, athleteId?: string) => void;
@@ -115,6 +145,72 @@ interface AppContextType {
   eraseAllAthleteData: (athleteId: string) => boolean;
   exportAthleteData: (format: 'json' | 'csv') => void;
   addAuditLog: (event: string, severity: 'INFO' | 'WARN' | 'ALERT', details?: Record<string, unknown>) => void;
+
+  // MODULE 1: Workout Sessions & Morning DOMS
+  workoutSessions: WorkoutSessionLog[];
+  morningDomsLogs: MorningDomsLog[];
+  isMorningDomsModalOpen: boolean;
+  setIsMorningDomsModalOpen: (open: boolean) => void;
+  logWorkoutSession: (session: Omit<WorkoutSessionLog, 'id'>) => { session: WorkoutSessionLog; newRecords: GamificationRecord[] };
+  submitMorningDoms: (hasSoreness: boolean, muscleScores: DomsMuscleScore[], workoutSessionId?: string) => void;
+
+  // MODULE 2: Gamification, Streaks, Daily Touchpoints & Educational Drip
+  gamificationRecords: GamificationRecord[];
+  latestCelebrationRecord: GamificationRecord | null;
+  dismissCelebrationRecord: () => void;
+  stepStreak: StepStreakState;
+  dripModules: EducationalDripModule[];
+  completeDripModule: (moduleId: string) => void;
+  isEndOfDayModalOpen: boolean;
+  setIsEndOfDayModalOpen: (open: boolean) => void;
+  isMorningBriefingOpen: boolean;
+  setIsMorningBriefingOpen: (open: boolean) => void;
+  isDripModalOpen: boolean;
+  setIsDripModalOpen: (open: boolean) => void;
+
+  // MODULE 3: Public Community Q&A Board
+  qaThreads: QaThread[];
+  createQaThread: (topic: QaTopic, title: string, body: string) => void;
+  replyToQaThread: (threadId: string, body: string) => void;
+  togglePinQaThread: (threadId: string) => void;
+
+  // MODULE 4 & 5: Nutrition Targets, Hunger/Satiety Logger
+  hungerTargets: HungerSatietyTarget[];
+  updateHungerTarget: (mealType: 'MAIN_MEAL' | 'SNACK', pre: number, post: number) => void;
+  satietyLogs: MealSatietyLog[];
+  logPreMealHunger: (mealLabel: string, mealType: 'MAIN_MEAL' | 'SNACK', hungerScore: number) => void;
+  logPostMealSatiety: (logId: string, satietyScore: number) => void;
+
+  // MODULE 6: Habits & Evening Reflection
+  habits: HabitItem[];
+  habitLogs: HabitDailyLog[];
+  addHabitItem: (titleIt: string, titleEn: string, weeklyTargetDays: number, category: HabitItem['category']) => void;
+  toggleHabitCompletion: (habitId: string, logDate?: string) => void;
+  saveEveningReflection: (energyScore: number, challengeNote: string, logDate?: string) => void;
+
+  // MODULE 7: Qualifying Onboarding Funnel & Feature Flags
+  onboardingApplications: OnboardingApplication[];
+  activeTier: SubscriptionTier;
+  activeOnboardingStatus: OnboardingStatus;
+  featureFlags: TierFeatureFlags;
+  isOnboardingModalOpen: boolean;
+  setIsOnboardingModalOpen: (open: boolean) => void;
+  submitOnboardingApplication: (payload: {
+    applicant_name: string;
+    applicant_email: string;
+    selected_tier: SubscriptionTier;
+    primary_goal: string;
+    training_experience: string;
+    weekly_availability_days: number;
+    injuries_or_notes: string;
+    commitment_score: number;
+  }) => OnboardingApplication;
+  inviteToDiscoveryCall: (applicationId: string, callLink: string) => void;
+  approveVipApplication: (applicationId: string) => void;
+
+  // MODULE 8: i18n
+  locale: SupportedLocale;
+  setLocale: (loc: SupportedLocale) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -318,6 +414,79 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Modals
   const [isPreMergeGateOpen, setIsPreMergeGateOpen] = useState(false);
   const [isThemeEditorOpen, setIsThemeEditorOpen] = useState(false);
+
+  // MODULE 1-8 STATES
+  const [locale, setLocaleState] = useState<SupportedLocale>(() => {
+    const saved = localStorage.getItem('ttp_locale');
+    return (saved as SupportedLocale) || 'it';
+  });
+  const setLocale = (loc: SupportedLocale) => {
+    setLocaleState(loc);
+    localStorage.setItem('ttp_locale', loc);
+  };
+
+  const [workoutSessions, setWorkoutSessions] = useState<WorkoutSessionLog[]>(() => {
+    const saved = localStorage.getItem('ttp_workout_sessions');
+    return saved ? JSON.parse(saved) : INITIAL_WORKOUT_SESSIONS;
+  });
+
+  const [morningDomsLogs, setMorningDomsLogs] = useState<MorningDomsLog[]>(() => {
+    const saved = localStorage.getItem('ttp_morning_doms');
+    return saved ? JSON.parse(saved) : INITIAL_MORNING_DOMS;
+  });
+  const [isMorningDomsModalOpen, setIsMorningDomsModalOpen] = useState(false);
+
+  const [gamificationRecords, setGamificationRecords] = useState<GamificationRecord[]>(() => {
+    const saved = localStorage.getItem('ttp_gamification_records');
+    return saved ? JSON.parse(saved) : INITIAL_GAMIFICATION_RECORDS;
+  });
+  const [latestCelebrationRecord, setLatestCelebrationRecord] = useState<GamificationRecord | null>(null);
+  const dismissCelebrationRecord = () => setLatestCelebrationRecord(null);
+
+  const [stepStreak, setStepStreak] = useState<StepStreakState>(() => {
+    const saved = localStorage.getItem('ttp_step_streak');
+    return saved ? JSON.parse(saved) : INITIAL_STEP_STREAK;
+  });
+
+  const [dripModules, setDripModules] = useState<EducationalDripModule[]>(() => {
+    const saved = localStorage.getItem('ttp_drip_modules');
+    return saved ? JSON.parse(saved) : INITIAL_EDUCATIONAL_DRIP_MODULES;
+  });
+
+  const [isEndOfDayModalOpen, setIsEndOfDayModalOpen] = useState(false);
+  const [isMorningBriefingOpen, setIsMorningBriefingOpen] = useState(false);
+  const [isDripModalOpen, setIsDripModalOpen] = useState(false);
+
+  const [qaThreads, setQaThreads] = useState<QaThread[]>(() => {
+    const saved = localStorage.getItem('ttp_qa_threads');
+    return saved ? JSON.parse(saved) : INITIAL_QA_THREADS;
+  });
+
+  const [hungerTargets, setHungerTargets] = useState<HungerSatietyTarget[]>(() => {
+    const saved = localStorage.getItem('ttp_hunger_targets');
+    return saved ? JSON.parse(saved) : INITIAL_HUNGER_TARGETS;
+  });
+
+  const [satietyLogs, setSatietyLogs] = useState<MealSatietyLog[]>(() => {
+    const saved = localStorage.getItem('ttp_satiety_logs');
+    return saved ? JSON.parse(saved) : INITIAL_SATIETY_LOGS;
+  });
+
+  const [habits, setHabits] = useState<HabitItem[]>(() => {
+    const saved = localStorage.getItem('ttp_habits');
+    return saved ? JSON.parse(saved) : INITIAL_HABITS;
+  });
+
+  const [habitLogs, setHabitLogs] = useState<HabitDailyLog[]>(() => {
+    const saved = localStorage.getItem('ttp_habit_logs');
+    return saved ? JSON.parse(saved) : INITIAL_HABIT_LOGS;
+  });
+
+  const [onboardingApplications, setOnboardingApplications] = useState<OnboardingApplication[]>(() => {
+    const saved = localStorage.getItem('ttp_onboarding_apps');
+    return saved ? JSON.parse(saved) : INITIAL_ONBOARDING_APPLICATIONS;
+  });
+  const [isOnboardingModalOpen, setIsOnboardingModalOpen] = useState(false);
 
   // Sync theme to CSS variables on root element
   useEffect(() => {
@@ -832,6 +1001,413 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addAuditLog('DATA_PORTABILITY_EXPORT', 'INFO', { format, athlete_id: currentUser.id });
   };
 
+  // ============================================================================
+  // MODULE 1-8 ACTIONS
+  // ============================================================================
+  const logWorkoutSession = (sessionData: Omit<WorkoutSessionLog, 'id'>) => {
+    const newSession: WorkoutSessionLog = {
+      ...sessionData,
+      id: `ws-${Date.now()}`,
+      notes: sessionData.notes ? sanitizeUserInput(sessionData.notes) : undefined,
+    };
+
+    const newRecords: GamificationRecord[] = [];
+    const prevSessions = workoutSessions.filter((s) => s.athlete_id === sessionData.athlete_id);
+    const maxPrevSessionVolume = prevSessions.reduce((max, s) => Math.max(max, s.total_tonnage_kg), 0);
+
+    if (newSession.total_tonnage_kg > maxPrevSessionVolume && newSession.total_tonnage_kg > 0) {
+      newRecords.push({
+        id: `pr-vol-${Date.now()}`,
+        athlete_id: sessionData.athlete_id,
+        record_type: 'VOLUME',
+        scope: 'SESSION',
+        exercise_name: newSession.split_day,
+        value: Math.round(newSession.total_tonnage_kg),
+        unit: 'kg tonnellaggio',
+        achieved_at: new Date().toISOString(),
+        celebrated: false,
+      });
+    }
+
+    // Check est. 1RM PR per exercise (Epley formula: w * (1 + r/30))
+    const prevExerciseBest: Record<string, number> = {};
+    prevSessions.forEach((s) => {
+      s.sets.forEach((st) => {
+        const e1rm = st.weight_kg * (1 + st.reps / 30);
+        if (!prevExerciseBest[st.exercise_name] || e1rm > prevExerciseBest[st.exercise_name]) {
+          prevExerciseBest[st.exercise_name] = e1rm;
+        }
+      });
+    });
+
+    const sessionExerciseBest: Record<string, number> = {};
+    newSession.sets.forEach((st) => {
+      if (!st.completed || st.weight_kg <= 0) return;
+      const e1rm = Number((st.weight_kg * (1 + st.reps / 30)).toFixed(1));
+      if (!sessionExerciseBest[st.exercise_name] || e1rm > sessionExerciseBest[st.exercise_name]) {
+        sessionExerciseBest[st.exercise_name] = e1rm;
+      }
+    });
+
+    Object.entries(sessionExerciseBest).forEach(([exName, best]) => {
+      if (best > (prevExerciseBest[exName] || 0)) {
+        newRecords.push({
+          id: `pr-1rm-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+          athlete_id: sessionData.athlete_id,
+          record_type: 'EST_1RM',
+          scope: 'EXERCISE',
+          exercise_name: exName,
+          value: best,
+          unit: 'kg (e1RM)',
+          achieved_at: new Date().toISOString(),
+          celebrated: false,
+        });
+      }
+    });
+
+    setWorkoutSessions((prev) => {
+      const updated = [newSession, ...prev];
+      localStorage.setItem('ttp_workout_sessions', JSON.stringify(updated));
+      return updated;
+    });
+
+    if (newRecords.length > 0) {
+      setGamificationRecords((prev) => {
+        const updated = [...newRecords, ...prev];
+        localStorage.setItem('ttp_gamification_records', JSON.stringify(updated));
+        return updated;
+      });
+      setLatestCelebrationRecord(newRecords[0]);
+    }
+
+    addAuditLog('WORKOUT_SESSION_LOGGED', 'INFO', {
+      split: newSession.split_day,
+      duration_min: newSession.session_duration_minutes,
+      tonnage: newSession.total_tonnage_kg,
+      prs_unlocked: newRecords.length,
+    });
+
+    return { session: newSession, newRecords };
+  };
+
+  const submitMorningDoms = (
+    hasSoreness: boolean,
+    muscleScores: DomsMuscleScore[],
+    workoutSessionId?: string
+  ) => {
+    const newDoms: MorningDomsLog = {
+      id: `doms-${Date.now()}`,
+      athlete_id: currentUser.role === 'COACH' ? selectedAthleteId : currentUser.id,
+      workout_session_id: workoutSessionId,
+      log_date: new Date().toISOString().split('T')[0],
+      has_soreness: hasSoreness,
+      muscle_scores: hasSoreness ? muscleScores : [],
+      created_at: new Date().toISOString(),
+    };
+    setMorningDomsLogs((prev) => {
+      const updated = [newDoms, ...prev];
+      localStorage.setItem('ttp_morning_doms', JSON.stringify(updated));
+      return updated;
+    });
+    setIsMorningDomsModalOpen(false);
+    addAuditLog('MORNING_DOMS_LOGGED', 'INFO', {
+      has_soreness: hasSoreness,
+      muscles: muscleScores.map((m) => `${m.muscle}:${m.soreness}`).join(','),
+    });
+  };
+
+  const completeDripModule = (moduleId: string) => {
+    const targetId = currentUser.role === 'COACH' ? selectedAthleteId : currentUser.id;
+    setDripModules((prev) => {
+      const updated = prev.map((m) =>
+        m.id === moduleId && !m.completed_by_athlete_ids.includes(targetId)
+          ? { ...m, completed_by_athlete_ids: [...m.completed_by_athlete_ids, targetId] }
+          : m
+      );
+      localStorage.setItem('ttp_drip_modules', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const createQaThread = (topic: QaTopic, title: string, body: string) => {
+    const cleanTitle = sanitizeUserInput(title);
+    const cleanBody = sanitizeUserInput(body);
+    if (!cleanTitle || !cleanBody) return;
+
+    const newThread: QaThread = {
+      id: `qa-${Date.now()}`,
+      author_id: currentUser.id,
+      author_name: currentUser.full_name,
+      topic,
+      title: cleanTitle,
+      body: cleanBody,
+      is_pinned: false,
+      created_at: new Date().toISOString(),
+      replies: [],
+    };
+    setQaThreads((prev) => {
+      const updated = [newThread, ...prev];
+      localStorage.setItem('ttp_qa_threads', JSON.stringify(updated));
+      return updated;
+    });
+    addAuditLog('QA_THREAD_CREATED', 'INFO', { topic, title: cleanTitle });
+  };
+
+  const replyToQaThread = (threadId: string, body: string) => {
+    const cleanBody = sanitizeUserInput(body);
+    if (!cleanBody) return;
+
+    setQaThreads((prev) => {
+      const updated = prev.map((th) => {
+        if (th.id !== threadId) return th;
+        return {
+          ...th,
+          replies: [
+            ...th.replies,
+            {
+              id: `qar-${Date.now()}`,
+              thread_id: threadId,
+              author_id: currentUser.id,
+              author_name: currentUser.full_name,
+              author_role: currentUser.role,
+              body: cleanBody,
+              is_official_coach_reply: currentUser.role === 'COACH',
+              created_at: new Date().toISOString(),
+            },
+          ],
+        };
+      });
+      localStorage.setItem('ttp_qa_threads', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const togglePinQaThread = (threadId: string) => {
+    if (currentUser.role !== 'COACH') return;
+    setQaThreads((prev) => {
+      const updated = prev.map((th) => (th.id === threadId ? { ...th, is_pinned: !th.is_pinned } : th));
+      localStorage.setItem('ttp_qa_threads', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const updateHungerTarget = (mealType: 'MAIN_MEAL' | 'SNACK', pre: number, post: number) => {
+    setHungerTargets((prev) => {
+      const updated = prev.map((ht) =>
+        ht.meal_type === mealType ? { ...ht, target_pre_hunger: pre, target_post_satiety: post } : ht
+      );
+      localStorage.setItem('ttp_hunger_targets', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const logPreMealHunger = (mealLabel: string, mealType: 'MAIN_MEAL' | 'SNACK', hungerScore: number) => {
+    const now = Date.now();
+    const newLog: MealSatietyLog = {
+      id: `sat-${now}`,
+      athlete_id: currentUser.role === 'COACH' ? selectedAthleteId : currentUser.id,
+      meal_label: sanitizeUserInput(mealLabel) || 'Pasto',
+      meal_type: mealType,
+      pre_meal_hunger: hungerScore,
+      logged_at: new Date(now).toISOString(),
+      satiety_prompt_due_at: new Date(now + 60 * 60000).toISOString(),
+    };
+    setSatietyLogs((prev) => {
+      const updated = [newLog, ...prev];
+      localStorage.setItem('ttp_satiety_logs', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const logPostMealSatiety = (logId: string, satietyScore: number) => {
+    setSatietyLogs((prev) => {
+      const updated = prev.map((l) =>
+        l.id === logId
+          ? { ...l, post_meal_satiety: satietyScore, satiety_completed_at: new Date().toISOString() }
+          : l
+      );
+      localStorage.setItem('ttp_satiety_logs', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const addHabitItem = (
+    titleIt: string,
+    titleEn: string,
+    weeklyTargetDays: number,
+    category: HabitItem['category']
+  ) => {
+    const targetId = currentUser.role === 'COACH' ? selectedAthleteId : currentUser.id;
+    const newHab: HabitItem = {
+      id: `hab-${Date.now()}`,
+      athlete_id: targetId,
+      title_it: sanitizeUserInput(titleIt),
+      title_en: sanitizeUserInput(titleEn || titleIt),
+      weekly_target_days: weeklyTargetDays,
+      category,
+    };
+    setHabits((prev) => {
+      const updated = [...prev, newHab];
+      localStorage.setItem('ttp_habits', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const toggleHabitCompletion = (habitId: string, logDate?: string) => {
+    const dateKey = logDate || new Date().toISOString().split('T')[0];
+    const targetId = currentUser.role === 'COACH' ? selectedAthleteId : currentUser.id;
+    setHabitLogs((prev) => {
+      const idx = prev.findIndex((l) => l.athlete_id === targetId && l.log_date === dateKey);
+      let updated: HabitDailyLog[];
+      if (idx >= 0) {
+        updated = [...prev];
+        const exists = updated[idx].completed_habit_ids.includes(habitId);
+        updated[idx] = {
+          ...updated[idx],
+          completed_habit_ids: exists
+            ? updated[idx].completed_habit_ids.filter((id) => id !== habitId)
+            : [...updated[idx].completed_habit_ids, habitId],
+        };
+      } else {
+        updated = [
+          {
+            id: `hlog-${Date.now()}`,
+            athlete_id: targetId,
+            log_date: dateKey,
+            completed_habit_ids: [habitId],
+          },
+          ...prev,
+        ];
+      }
+      localStorage.setItem('ttp_habit_logs', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const saveEveningReflection = (energyScore: number, challengeNote: string, logDate?: string) => {
+    const dateKey = logDate || new Date().toISOString().split('T')[0];
+    const targetId = currentUser.role === 'COACH' ? selectedAthleteId : currentUser.id;
+    const cleanNote = sanitizeUserInput(challengeNote);
+    setHabitLogs((prev) => {
+      const idx = prev.findIndex((l) => l.athlete_id === targetId && l.log_date === dateKey);
+      let updated: HabitDailyLog[];
+      if (idx >= 0) {
+        updated = [...prev];
+        updated[idx] = {
+          ...updated[idx],
+          evening_energy_score: energyScore,
+          evening_challenge_note: cleanNote,
+        };
+      } else {
+        updated = [
+          {
+            id: `hlog-${Date.now()}`,
+            athlete_id: targetId,
+            log_date: dateKey,
+            completed_habit_ids: [],
+            evening_energy_score: energyScore,
+            evening_challenge_note: cleanNote,
+          },
+          ...prev,
+        ];
+      }
+      localStorage.setItem('ttp_habit_logs', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const submitOnboardingApplication: AppContextType['submitOnboardingApplication'] = (payload) => {
+    const isEntry = payload.selected_tier === 'TIER_1_ENTRY';
+    const newApp: OnboardingApplication = {
+      id: `onb-${Date.now()}`,
+      applicant_id: currentUser.id,
+      applicant_name: sanitizeUserInput(payload.applicant_name),
+      applicant_email: sanitizeUserInput(payload.applicant_email),
+      selected_tier: payload.selected_tier,
+      status: isEntry ? 'TIER_1_ACTIVE' : 'PENDING_COACH_REVIEW',
+      primary_goal: sanitizeUserInput(payload.primary_goal),
+      training_experience: sanitizeUserInput(payload.training_experience),
+      weekly_availability_days: payload.weekly_availability_days,
+      injuries_or_notes: sanitizeUserInput(payload.injuries_or_notes),
+      commitment_score: payload.commitment_score,
+      stripe_checkout_completed: isEntry,
+      submitted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    setOnboardingApplications((prev) => {
+      const filtered = prev.filter((a) => a.applicant_id !== currentUser.id);
+      const updated = [newApp, ...filtered];
+      localStorage.setItem('ttp_onboarding_apps', JSON.stringify(updated));
+      return updated;
+    });
+    addAuditLog('ONBOARDING_SUBMITTED', 'INFO', {
+      tier: payload.selected_tier,
+      status: newApp.status,
+    });
+    return newApp;
+  };
+
+  const inviteToDiscoveryCall = (applicationId: string, callLink: string) => {
+    setOnboardingApplications((prev) => {
+      const updated = prev.map((a) =>
+        a.id === applicationId
+          ? {
+              ...a,
+              status: 'DISCOVERY_CALL_INVITED' as OnboardingStatus,
+              discovery_call_link: sanitizeUserInput(callLink),
+              updated_at: new Date().toISOString(),
+            }
+          : a
+      );
+      localStorage.setItem('ttp_onboarding_apps', JSON.stringify(updated));
+      return updated;
+    });
+    addAuditLog('VIP_DISCOVERY_CALL_INVITED', 'INFO', { applicationId });
+  };
+
+  const approveVipApplication = (applicationId: string) => {
+    setOnboardingApplications((prev) => {
+      const updated = prev.map((a) =>
+        a.id === applicationId
+          ? {
+              ...a,
+              status: 'TIER_2_APPROVED' as OnboardingStatus,
+              stripe_checkout_completed: true,
+              updated_at: new Date().toISOString(),
+            }
+          : a
+      );
+      localStorage.setItem('ttp_onboarding_apps', JSON.stringify(updated));
+      return updated;
+    });
+    addAuditLog('VIP_COACHING_APPROVED', 'INFO', { applicationId });
+  };
+
+  // Compute Active Tier & Feature Flags
+  const currentAppRecord = onboardingApplications.find((a) => a.applicant_id === currentUser.id);
+  const activeTier: SubscriptionTier = currentUser.role === 'COACH'
+    ? 'TIER_2_VIP'
+    : currentAppRecord?.selected_tier || 'TIER_2_VIP';
+  const activeOnboardingStatus: OnboardingStatus = currentUser.role === 'COACH'
+    ? 'TIER_2_APPROVED'
+    : currentAppRecord?.status || 'TIER_2_APPROVED';
+
+  const isVipUnlocked =
+    currentUser.role === 'COACH' ||
+    (activeTier === 'TIER_2_VIP' && activeOnboardingStatus === 'TIER_2_APPROVED');
+
+  const isEntryUnlocked = activeOnboardingStatus === 'TIER_1_ACTIVE' || isVipUnlocked;
+
+  const featureFlags: TierFeatureFlags = {
+    can_access_workout_logger: isEntryUnlocked,
+    can_access_recipes_and_hand_portions: isEntryUnlocked,
+    can_access_community_qa: isEntryUnlocked,
+    can_access_toolbox_habits: isEntryUnlocked,
+    can_access_1on1_macrocycle: isVipUnlocked,
+    can_submit_7step_checkin: isVipUnlocked,
+    can_upload_execution_videos: isVipUnlocked,
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -892,6 +1468,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsEmailSchedulerModalOpen,
         updateSchedulerConfig,
         triggerCheckInEmailDispatch,
+        workoutSessions,
+        morningDomsLogs,
+        isMorningDomsModalOpen,
+        setIsMorningDomsModalOpen,
+        logWorkoutSession,
+        submitMorningDoms,
+        gamificationRecords,
+        latestCelebrationRecord,
+        dismissCelebrationRecord,
+        stepStreak,
+        dripModules,
+        completeDripModule,
+        isEndOfDayModalOpen,
+        setIsEndOfDayModalOpen,
+        isMorningBriefingOpen,
+        setIsMorningBriefingOpen,
+        isDripModalOpen,
+        setIsDripModalOpen,
+        qaThreads,
+        createQaThread,
+        replyToQaThread,
+        togglePinQaThread,
+        hungerTargets,
+        updateHungerTarget,
+        satietyLogs,
+        logPreMealHunger,
+        logPostMealSatiety,
+        habits,
+        habitLogs,
+        addHabitItem,
+        toggleHabitCompletion,
+        saveEveningReflection,
+        onboardingApplications,
+        activeTier,
+        activeOnboardingStatus,
+        featureFlags,
+        isOnboardingModalOpen,
+        setIsOnboardingModalOpen,
+        submitOnboardingApplication,
+        inviteToDiscoveryCall,
+        approveVipApplication,
+        locale,
+        setLocale,
       }}
     >
       {children}

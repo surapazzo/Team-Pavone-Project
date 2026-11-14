@@ -1,0 +1,67 @@
+{
+  "app": {
+    "brand": "Team Pavone",
+    "subtitle": "Coaching & Bodybuilding Scientifico",
+    "publicSite": "Sito Pubblico",
+    "clientArea": "Area Clienti",
+    "login": "Accedi",
+    "logout": "Esci / Cambia Account",
+    "language": "Lingua"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "calendar": "Macrociclo",
+    "workouts": "Allenamento",
+    "nutrition": "Nutrizione & Ricette",
+    "community": "Bacheca Q&A",
+    "toolbox": "Abitudini & Toolbox",
+    "checkin": "Check-In",
+    "privacy": "Privacy & GDPR"
+  },
+  "workout": {
+    "loggerTitle": "Workout Logger Mobile",
+    "startSession": "Inizia Sessione",
+    "finishSession": "Completa & Salva Sessione",
+    "weightKg": "Carico (kg)",
+    "reps": "Reps",
+    "rpeRir": "RPE / RIR",
+    "preEffort": "Sforzo Pre-Workout (1-10)",
+    "intraEffort": "Sforzo Durante (1-10)",
+    "postEffort": "Sforzo Post-Workout (1-10)",
+    "domsTitle": "Hai dolori dopo l'allenamento di ieri? Se sì, dove di più?",
+    "domsSave": "Registra DOMS Mattutini"
+  },
+  "nutrition": {
+    "title": "Nutrizione, Porzioni a Mano & Ricette",
+    "palms": "Palmi (Proteine)",
+    "thumbs": "Pollici (Grassi)",
+    "cuppedHands": "Manciate piene (Carboidrati cotti)",
+    "fists": "Pugni (Verdure)",
+    "foodSpectrum": "Spettro Alimentare",
+    "eatMore": "Mangia di più",
+    "eatSome": "Mangia moderatamente",
+    "eatLess": "Limita",
+    "hungerPre": "Fame Pre-Pasto (1-10)",
+    "satietyPost": "Sazietà Post-Pasto +60m (1-10)"
+  },
+  "community": {
+    "title": "Bacheca Q&A Pubblica & FAQ",
+    "subtitle": "Blocco giornaliero 60 min di Coach Francesco Pavone",
+    "myQuestions": "Le Mie Domande",
+    "allTopics": "Tutti gli Argomenti",
+    "pinned": "Fissato in alto",
+    "askPlaceholder": "Scrivi una domanda tecnica per il Coach..."
+  },
+  "toolbox": {
+    "title": "Abitudini Quotidiane & Personal Toolbox",
+    "habitsTitle": "Tracker Abitudini Giornaliere",
+    "reflectionTitle": "Riflessione Serale (Energia & Sfide)",
+    "libraryTitle": "Libreria & Schede Operative"
+  },
+  "onboarding": {
+    "title": "Questionario Qualificante di Accesso",
+    "tier1": "Tier 1 · App Entry-Level (€19/mese)",
+    "tier2": "Tier 2 · VIP Coaching 1-on-1",
+    "pendingCoachReview": "In attesa di revisione del Coach"
+  }
+}

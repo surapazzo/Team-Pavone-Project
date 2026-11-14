@@ -19,6 +19,14 @@ import { PrivacyGdprView } from './components/privacy/PrivacyGdprView';
 import { CoachCmsDrawer } from './components/cms/CoachCmsDrawer';
 import { CookieConsentBanner } from './components/cookie/CookieConsentBanner';
 import { CheckInEmailSchedulerView } from './components/checkin/CheckInEmailSchedulerView';
+import { CommunityQaBoard } from './components/community/CommunityQaBoard';
+import { NutritionHubView } from './components/nutrition/NutritionHubView';
+import { HabitsToolboxView } from './components/toolbox/HabitsToolboxView';
+import { MobileBottomNav } from './components/layout/MobileBottomNav';
+import { MorningDomsModal } from './components/workouts/MorningDomsModal';
+import { EngagementHubModals } from './components/engagement/EngagementHubModals';
+import { OnboardingFunnelModal } from './components/onboarding/OnboardingFunnelModal';
+import { Lock, Sparkles } from 'lucide-react';
 
 const AppContent: React.FC = () => {
   const {
@@ -26,11 +34,49 @@ const AppContent: React.FC = () => {
     currentUser,
     isEmailSchedulerModalOpen,
     setIsEmailSchedulerModalOpen,
+    featureFlags,
+    activeOnboardingStatus,
+    onboardingApplications,
+    setIsOnboardingModalOpen,
   } = useApp();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCmsModalOpen, setIsCmsModalOpen] = useState(false);
 
   const isAppRoute = currentRoute.startsWith('/app');
+  const currentAppRecord = onboardingApplications.find((a) => a.applicant_id === currentUser.id);
+
+  const renderVipGate = (featureLabel: string) => (
+    <div className="max-w-2xl mx-auto px-4 py-12 pb-24 lg:pb-12">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 text-center space-y-4">
+        <div className="w-14 h-14 rounded-2xl bg-purple-100 text-purple-700 mx-auto flex items-center justify-center">
+          <Lock className="w-7 h-7" />
+        </div>
+        <div className="text-xs font-bold uppercase tracking-wider text-purple-700">
+          Funzionalità Esclusiva Tier 2 · VIP Coaching
+        </div>
+        <h2 className="text-xl font-black text-slate-900">
+          {featureLabel} richiede l'approvazione VIP
+        </h2>
+        <p className="text-xs text-slate-600 leading-relaxed max-w-md mx-auto">
+          Stato attuale del tuo profilo: <strong className="text-slate-900">{activeOnboardingStatus}</strong>.
+          Puoi usare liberamente Workout Logger, Ricette & Porzioni a Mano, Bacheca Q&A Pubblica e Toolbox Abitudini.
+        </p>
+        {currentAppRecord?.discovery_call_link && activeOnboardingStatus === 'DISCOVERY_CALL_INVITED' && (
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900">
+            Invito Discovery Call attivo: <code>{currentAppRecord.discovery_call_link}</code>
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={() => setIsOnboardingModalOpen(true)}
+          className="px-6 py-3 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs inline-flex items-center gap-2 cursor-pointer"
+        >
+          <Sparkles className="w-4 h-4" />
+          Apri Questionario & Stato Upgrade VIP
+        </button>
+      </div>
+    </div>
+  );
 
   const renderRoute = () => {
     switch (currentRoute) {
@@ -41,11 +87,24 @@ const AppContent: React.FC = () => {
       case '/app/dashboard':
         return currentUser.role === 'COACH' ? <CoachDashboard /> : <AthleteDashboard />;
       case '/app/calendar':
+        if (currentUser.role !== 'COACH' && !featureFlags.can_access_1on1_macrocycle) {
+          return renderVipGate('Macrociclo 1-to-1 Personalizzato');
+        }
         return <CalendarView />;
       case '/app/workouts':
         return <WorkoutsView />;
+      case '/app/nutrition':
+        return <NutritionHubView />;
+      case '/app/community':
+        return <CommunityQaBoard />;
+      case '/app/toolbox':
+        return <HabitsToolboxView />;
       case '/app/check-in':
-        return currentUser.role === 'COACH' ? <CoachCheckInReview /> : <CheckInWizard />;
+        if (currentUser.role === 'COACH') return <CoachCheckInReview />;
+        if (!featureFlags.can_submit_7step_checkin) {
+          return renderVipGate('Check-In Settimanale 7 Aree');
+        }
+        return <CheckInWizard />;
       case '/app/privacy-gdpr':
         return <PrivacyGdprView />;
       default:
@@ -78,6 +137,9 @@ const AppContent: React.FC = () => {
         </main>
       </div>
 
+      {/* Mobile-First Bottom Navigation */}
+      <MobileBottomNav />
+
       {/* Full CMS Drawer for Coach Francesco */}
       {currentUser.role === 'COACH' && (
         <CoachCmsDrawer
@@ -88,6 +150,11 @@ const AppContent: React.FC = () => {
 
       {/* GDPR & ePrivacy Cookie Consent Banner */}
       <CookieConsentBanner />
+
+      {/* Module 1, 2 & 7 Global Modals */}
+      <MorningDomsModal />
+      <EngagementHubModals />
+      <OnboardingFunnelModal />
 
       {/* Global Check-In Email Scheduler Modal */}
       {isEmailSchedulerModalOpen && (

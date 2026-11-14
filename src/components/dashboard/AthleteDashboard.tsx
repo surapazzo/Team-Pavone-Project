@@ -6,12 +6,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { aggregateLogsByIsoWeek } from '../../services/bodybuildingLogic';
-import {
-  parseGarminFitFile,
-  generateSampleGarminFitBinary,
-  generateSampleGarminSleepFitBinary,
-  parseGarminFitBuffer,
-} from '../../services/garminFitParser';
 import { parseAthleteExcelFile, generateAthleteExcelTemplate } from '../../services/excelImporter';
 import {
   TrendingDown,
@@ -21,18 +15,21 @@ import {
   Footprints,
   Moon,
   Plus,
-  Usb,
   Upload,
   CheckCircle2,
   AlertCircle,
   FileSpreadsheet,
   Download,
-  Calendar,
   Sparkles,
   Edit2,
   Check,
   X,
-  BedDouble,
+  Dumbbell,
+  Trophy,
+  Sun,
+  BookOpen,
+  Bell,
+  ArrowRight,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -47,6 +44,7 @@ import {
   ReferenceLine,
   Cell,
 } from 'recharts';
+import { MacrocycleWeightVolumeChart } from './MacrocycleWeightVolumeChart';
 
 export const AthleteDashboard: React.FC = () => {
   const {
@@ -54,9 +52,15 @@ export const AthleteDashboard: React.FC = () => {
     dailyLogs,
     addDailyLog,
     bulkImportDailyLogs,
-    importGarminFitActivity,
-    importGarminSleepActivity,
-    garminSleepLogs,
+    setCurrentRoute,
+    stepStreak,
+    gamificationRecords,
+    satietyLogs,
+    dripModules,
+    setIsMorningDomsModalOpen,
+    setIsMorningBriefingOpen,
+    setIsEndOfDayModalOpen,
+    setIsDripModalOpen,
     theme,
   } = useApp();
 
@@ -156,11 +160,12 @@ export const AthleteDashboard: React.FC = () => {
   const [excelError, setExcelError] = useState<string | null>(null);
   const excelInputRef = useRef<HTMLInputElement>(null);
 
-  // Garmin USB Importer states
-  const [garminError, setGarminError] = useState<string | null>(null);
-  const [garminSuccessMsg, setGarminSuccessMsg] = useState<string | null>(null);
-  const [isParsingGarmin, setIsParsingGarmin] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const pendingSatietyCount = satietyLogs.filter(
+    (s) => s.athlete_id === currentUser.id && s.post_meal_satiety === undefined
+  ).length;
+  const latestPr = gamificationRecords.find((r) => r.athlete_id === currentUser.id);
+  const stepsRemaining = Math.max(0, stepStreak.daily_target_steps - stepStreak.today_steps);
+  const completedDrips = dripModules.filter((m) => m.completed_by_athlete_ids.includes(currentUser.id)).length;
 
   const startEditingCard = (cardKey: string, currentValue: number) => {
     setEditingCard(cardKey);
@@ -257,7 +262,7 @@ export const AthleteDashboard: React.FC = () => {
       { id: 'demo-7', athlete_id: currentUser.id, log_date: '2026-03-07', weight_kg: 81.5, calories_kcal: 3100, steps: 11200, sleep_hours: 8.0, workout_completed: true, waist_circ_cm: 82.8, notes: 'Ricarica High Carb (450g Cho)' },
       { id: 'demo-8', athlete_id: currentUser.id, log_date: '2026-03-08', weight_kg: 81.6, calories_kcal: 2250, steps: 11400, sleep_hours: 7.8, workout_completed: true, waist_circ_cm: 82.7, notes: 'Spinta A post ricarica - Pienezza' },
       { id: 'demo-9', athlete_id: currentUser.id, log_date: '2026-03-09', weight_kg: 81.3, calories_kcal: 2250, steps: 10900, sleep_hours: 8.0, workout_completed: true, waist_circ_cm: 82.5, notes: 'Trazione A' },
-      { id: 'demo-10', athlete_id: currentUser.id, log_date: '2026-03-10', weight_kg: 81.2, calories_kcal: 2250, steps: 11800, sleep_hours: 8.2, workout_completed: false, waist_circ_cm: 82.4, notes: 'Giorno OFF - Dati Garmin USB' },
+      { id: 'demo-10', athlete_id: currentUser.id, log_date: '2026-03-10', weight_kg: 81.2, calories_kcal: 2250, steps: 11800, sleep_hours: 8.2, workout_completed: false, waist_circ_cm: 82.4, notes: 'Giorno OFF - Monitoraggio Passi & Sonno' },
     ];
 
     setManualInitialWeight(null);
@@ -273,143 +278,6 @@ export const AthleteDashboard: React.FC = () => {
     );
   };
 
-  const handleGarminFileUpload = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    setGarminError(null);
-    setGarminSuccessMsg(null);
-    setIsParsingGarmin(true);
-
-    try {
-      const file = files[0];
-      const result = await parseGarminFitFile(file);
-
-      if (!result.valid || !result.parsedData) {
-        setGarminError(result.error || 'Errore durante la decodifica del file Garmin .FIT');
-        setIsParsingGarmin(false);
-        return;
-      }
-
-      const p = result.parsedData;
-      if (p.isSleepRecord && p.sleepMetrics) {
-        const sm = p.sleepMetrics;
-        importGarminSleepActivity({
-          athlete_id: currentUser.id,
-          sleep_date: sm.sleepDate,
-          total_sleep_hours: sm.totalSleepHours,
-          sleep_score: sm.sleepScore,
-          quality_rating: sm.qualityRating,
-          deep_sleep_minutes: sm.deepSleepMinutes,
-          light_sleep_minutes: sm.lightSleepMinutes,
-          rem_sleep_minutes: sm.remSleepMinutes,
-          awake_minutes: sm.awakeMinutes,
-          avg_hrv_ms: sm.avgHrvMs,
-          resting_heart_rate_bpm: sm.restingHeartRateBpm,
-          sleep_efficiency_pct: sm.sleepEfficiencyPct,
-          file_name: p.fileName,
-        });
-
-        // Reset manual override so auto-calculated sleep KPI reflects the file
-        setManualAvgSleep(null);
-
-        setGarminSuccessMsg(
-          `File Garmin .FIT Sonno decodificato con successo: ${sm.totalSleepHours}h di riposo, Sleep Score ${sm.sleepScore}/100 (${sm.qualityRating}), HRV notturno ${sm.avgHrvMs}ms, FC riposo ${sm.restingHeartRateBpm} bpm. Medie 7gg e grafici aggiornati!`
-        );
-      } else {
-        importGarminFitActivity({
-          athlete_id: currentUser.id,
-          activity_date: p.activityDate,
-          file_name: p.fileName,
-          file_size_bytes: p.fileSizeBytes,
-          crc16_valid: p.crc16Valid,
-          activity_type: p.activityType,
-          duration_seconds: p.durationSeconds,
-          active_calories: p.activeCalories,
-          avg_heart_rate: p.avgHeartRate,
-          max_heart_rate: p.maxHeartRate,
-          total_steps: p.totalSteps,
-        });
-
-        setGarminSuccessMsg(
-          `Attività ${p.fileName} importata con successo: ${Math.round(p.durationSeconds / 60)} min, ${p.activeCalories} kcal, FC media ${p.avgHeartRate} bpm. Flag allenamento impostato su SÌ!`
-        );
-      }
-    } catch {
-      setGarminError('Errore durante la lettura del file binario.');
-    } finally {
-      setIsParsingGarmin(false);
-    }
-  };
-
-  const handleGenerateSampleGarmin = () => {
-    const today = new Date().toISOString().split('T')[0];
-    const sampleBinary = generateSampleGarminFitBinary(today, {
-      durationMinutes: 72,
-      calories: 520,
-      avgHr: 142,
-      maxHr: 174,
-      steps: 4100,
-    });
-
-    const parsed = parseGarminFitBuffer(sampleBinary.buffer, `garmin_usb_${today}.fit`);
-    if (parsed.valid && parsed.parsedData) {
-      const p = parsed.parsedData;
-      importGarminFitActivity({
-        athlete_id: currentUser.id,
-        activity_date: p.activityDate,
-        file_name: p.fileName,
-        file_size_bytes: p.fileSizeBytes,
-        crc16_valid: p.crc16Valid,
-        activity_type: p.activityType,
-        duration_seconds: p.durationSeconds,
-        active_calories: p.activeCalories,
-        avg_heart_rate: p.avgHeartRate,
-        max_heart_rate: p.maxHeartRate,
-        total_steps: p.totalSteps,
-      });
-      setGarminSuccessMsg(
-        `Simulazione USB Garmin completata: generato file binario con Magic Bytes ".FIT" e CRC16 validato. ${p.activeCalories} kcal registrati!`
-      );
-    }
-  };
-
-  const handleGenerateSampleGarminSleep = () => {
-    const today = new Date().toISOString().split('T')[0];
-    const sampleBinary = generateSampleGarminSleepFitBinary(today, {
-      totalSleepHours: 8.2,
-      sleepScore: 89,
-      deepSleepMinutes: 110,
-      remSleepMinutes: 120,
-      awakeMinutes: 20,
-      restingHr: 48,
-      hrvMs: 66,
-    });
-
-    const parsed = parseGarminFitBuffer(sampleBinary.buffer, `garmin_sleep_${today}.fit`);
-    if (parsed.valid && parsed.parsedData?.sleepMetrics) {
-      const sm = parsed.parsedData.sleepMetrics;
-      importGarminSleepActivity({
-        athlete_id: currentUser.id,
-        sleep_date: sm.sleepDate,
-        total_sleep_hours: sm.totalSleepHours,
-        sleep_score: sm.sleepScore,
-        quality_rating: sm.qualityRating,
-        deep_sleep_minutes: sm.deepSleepMinutes,
-        light_sleep_minutes: sm.lightSleepMinutes,
-        rem_sleep_minutes: sm.remSleepMinutes,
-        awake_minutes: sm.awakeMinutes,
-        avg_hrv_ms: sm.avgHrvMs,
-        resting_heart_rate_bpm: sm.restingHeartRateBpm,
-        sleep_efficiency_pct: sm.sleepEfficiencyPct,
-        file_name: `garmin_sleep_${today}.fit`,
-      });
-
-      setManualAvgSleep(null);
-
-      setGarminSuccessMsg(
-        `Simulazione USB Sonno Garmin completata: rilevato file binario con Magic Bytes ".FIT" e Message 346. ${sm.totalSleepHours}h riposo, Sleep Score ${sm.sleepScore}/100 (${sm.qualityRating}), HRV ${sm.avgHrvMs}ms!`
-      );
-    }
-  };
 
   // Prepare chart dataset
   const chartData = useMemo(() => {
@@ -431,7 +299,7 @@ export const AthleteDashboard: React.FC = () => {
   }, [athleteLogs]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 lg:pb-8 space-y-8">
       {/* 1. Header & Live Editable KPI Cards */}
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -931,83 +799,120 @@ export const AthleteDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Card 3: Garmin USB Sync (.FIT) */}
-        <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-3">
+        {/* Card 3: Mobile Engagement Hub, PR Streaks & DOMS */}
+        <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between space-y-4">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
-                  <Usb className="w-4 h-4 text-indigo-700" />
+                <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                  <Trophy className="w-4 h-4 text-purple-700" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-bold text-slate-900">Garmin USB (.FIT)</h2>
-                  <div className="text-[10px] text-slate-400">/GARMIN/Activity/</div>
+                  <h2 className="text-sm font-bold text-slate-900">Hub Allenamento & Routine</h2>
+                  <div className="text-[10px] text-slate-400">Streak, DOMS, Sazietà & Moduli Drip</div>
                 </div>
               </div>
-              <span className="text-[10px] font-bold text-indigo-800 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
-                Magic Bytes .FIT
+              <span className="text-[11px] font-bold font-mono-tabular text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                Streak {stepStreak.current_streak_days}gg
               </span>
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed mb-3">
-              Collega l'orologio Garmin via USB per estrarre battito cardiaco, durata sessione e calorie attive bruciate.
-            </p>
-
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-indigo-200 hover:border-indigo-400 bg-indigo-50/40 rounded-xl p-4 text-center cursor-pointer transition-colors mb-3"
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".fit"
-                onChange={(e) => handleGarminFileUpload(e.target.files)}
-                className="hidden"
-              />
-              <Upload className="w-6 h-6 text-indigo-600 mx-auto mb-1" />
-              <div className="text-xs font-bold text-slate-800">
-                Trascina qui il file .fit
+            {/* Afternoon Step Reminder if incomplete */}
+            <div className={`p-3 rounded-xl border text-xs ${stepsRemaining > 0 ? 'bg-amber-50 border-amber-200 text-amber-950' : 'bg-emerald-50 border-emerald-200 text-emerald-950'}`}>
+              <div className="flex items-center justify-between font-bold mb-1">
+                <span className="flex items-center gap-1.5">
+                  <Footprints className="w-3.5 h-3.5" />
+                  {stepsRemaining > 0 ? 'Promemoria Passi Pomeridiano' : 'Obiettivo Passi Raggiunto'}
+                </span>
+                <span className="font-mono-tabular">
+                  {stepStreak.today_steps.toLocaleString()} / {stepStreak.daily_target_steps.toLocaleString()}
+                </span>
               </div>
-              <div className="text-[10px] text-slate-500">Decodifica binaria istantanea & CRC16</div>
+              <div className="w-full h-1.5 bg-white/80 rounded-full overflow-hidden">
+                <div
+                  className={`h-full ${stepsRemaining > 0 ? 'bg-amber-500' : 'bg-emerald-600'}`}
+                  style={{ width: `${Math.min(100, Math.round((stepStreak.today_steps / stepStreak.daily_target_steps) * 100))}%` }}
+                />
+              </div>
+              {stepsRemaining > 0 && (
+                <p className="text-[11px] mt-1 text-amber-800">
+                  Mancano <strong className="font-mono-tabular">{stepsRemaining.toLocaleString()}</strong> passi per mantenere lo streak consecutivo!
+                </p>
+              )}
             </div>
 
-            {garminError && (
-              <div className="p-2.5 bg-red-50 border border-red-200 rounded-lg text-red-900 text-xs flex items-center gap-2 mb-3">
-                <AlertCircle className="w-3.5 h-3.5 text-red-600 shrink-0" />
-                <span>{garminError}</span>
+            {/* Latest PR or Pending Satiety prompt */}
+            {latestPr && (
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold uppercase text-purple-700 block">Ultimo Record Storico</span>
+                  <span className="font-bold text-slate-900">{latestPr.exercise_name}</span>
+                </div>
+                <span className="font-black font-mono-tabular text-purple-800">
+                  {latestPr.value} {latestPr.unit}
+                </span>
               </div>
             )}
 
-            {garminSuccessMsg && (
-              <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-900 text-xs flex items-center gap-2 mb-3">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>{garminSuccessMsg}</span>
-              </div>
+            {pendingSatietyCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setCurrentRoute('/app/nutrition')}
+                className="w-full p-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-950 text-xs flex items-center justify-between transition-colors cursor-pointer"
+              >
+                <span className="flex items-center gap-1.5 font-bold">
+                  <Bell className="w-3.5 h-3.5 text-indigo-700" />
+                  Check Sazietà +60 min in sospeso ({pendingSatietyCount})
+                </span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             )}
           </div>
 
-          <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <button
-                onClick={handleGenerateSampleGarmin}
-                disabled={isParsingGarmin}
-                className="px-2.5 py-1.5 text-[11px] font-bold rounded-lg bg-indigo-50 text-indigo-900 border border-indigo-200 hover:bg-indigo-100 transition-colors flex items-center gap-1"
-                title="Simula attività palestra Garmin .FIT"
-              >
-                <Activity className="w-3 h-3 text-indigo-600" />
-                Test Workout .FIT
-              </button>
-              <button
-                onClick={handleGenerateSampleGarminSleep}
-                disabled={isParsingGarmin}
-                className="px-2.5 py-1.5 text-[11px] font-bold rounded-lg bg-blue-50 text-blue-900 border border-blue-200 hover:bg-blue-100 transition-colors flex items-center gap-1"
-                title="Simula file binario Garmin Sleep Assessment (Message 346)"
-              >
-                <Moon className="w-3 h-3 text-blue-600" />
-                Test Sonno .FIT
-              </button>
-            </div>
-            <span className="text-[10px] text-slate-400 font-mono">&lt; 25MB</span>
+          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setCurrentRoute('/app/workouts')}
+              className="min-h-[44px] px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Dumbbell className="w-3.5 h-3.5 text-purple-400" />
+              Workout Logger
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsMorningDomsModalOpen(true)}
+              className="min-h-[44px] px-3 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-950 border border-purple-200 font-bold text-[11px] flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Activity className="w-3.5 h-3.5 text-purple-700" />
+              Check DOMS
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsMorningBriefingOpen(true)}
+              className="min-h-[44px] px-2.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 font-semibold text-[11px] flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Sun className="w-3.5 h-3.5 text-amber-500" />
+              Briefing Mattina
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsEndOfDayModalOpen(true)}
+              className="min-h-[44px] px-2.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 font-semibold text-[11px] flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Moon className="w-3.5 h-3.5 text-indigo-600" />
+              Checklist Sera
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsDripModalOpen(true)}
+              className="col-span-2 min-h-[44px] px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-950 border border-emerald-200 font-bold text-[11px] flex items-center justify-between cursor-pointer"
+            >
+              <span className="flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5 text-emerald-700" />
+                Corsi & Drip Educativi ({completedDrips}/{dripModules.length})
+              </span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </div>
@@ -1156,124 +1061,13 @@ export const AthleteDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Telemetria Avanzata Sonno Garmin (Fasi, HRV, Punteggio di Recupero) */}
-        {garminSleepLogs.length > 0 && (
-          <div className="mt-4 p-4 sm:p-5 bg-gradient-to-r from-blue-950/20 via-indigo-950/15 to-purple-950/20 rounded-2xl border border-blue-200/80 shadow-xs space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center">
-                  <Moon className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-slate-900">
-                      Telemetria Sonno Garmin .FIT (Messaggio 346)
-                    </h3>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-200">
-                      Rilevazione: {garminSleepLogs[0].sleep_date}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-500">
-                    File: <code>{garminSleepLogs[0].file_name}</code> · Architettura del sonno & recupero neuromuscolare
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Punteggio Sonno</span>
-                  <div className="text-lg font-black text-blue-900 font-mono-tabular">
-                    {garminSleepLogs[0].sleep_score}<span className="text-xs text-slate-400">/100</span>
-                  </div>
-                </div>
-                <span className={`px-2.5 py-1 text-xs font-bold rounded-lg ${
-                  garminSleepLogs[0].quality_rating === 'ECCELLENTE'
-                    ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
-                    : garminSleepLogs[0].quality_rating === 'BUONO'
-                    ? 'bg-blue-100 text-blue-900 border border-blue-300'
-                    : 'bg-amber-100 text-amber-900 border border-amber-300'
-                }`}>
-                  {garminSleepLogs[0].quality_rating}
-                </span>
-              </div>
-            </div>
-
-            {/* Segmented Progress Bar for Sleep Stages */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-[11px] font-semibold text-slate-700">
-                <span>Ripartizione Fasi del Sonno ({garminSleepLogs[0].total_sleep_hours}h totali)</span>
-                <span className="text-slate-500 font-mono-tabular">Efficienza: {garminSleepLogs[0].sleep_efficiency_pct}%</span>
-              </div>
-              <div className="h-4 w-full rounded-full overflow-hidden flex bg-slate-100 border border-slate-200">
-                <div
-                  style={{ width: `${(garminSleepLogs[0].deep_sleep_minutes / (garminSleepLogs[0].total_sleep_hours * 60)) * 100}%` }}
-                  className="bg-indigo-700 h-full transition-all"
-                  title={`Sonno Profondo: ${garminSleepLogs[0].deep_sleep_minutes} min`}
-                />
-                <div
-                  style={{ width: `${(garminSleepLogs[0].rem_sleep_minutes / (garminSleepLogs[0].total_sleep_hours * 60)) * 100}%` }}
-                  className="bg-purple-600 h-full transition-all"
-                  title={`Sonno REM: ${garminSleepLogs[0].rem_sleep_minutes} min`}
-                />
-                <div
-                  style={{ width: `${(garminSleepLogs[0].light_sleep_minutes / (garminSleepLogs[0].total_sleep_hours * 60)) * 100}%` }}
-                  className="bg-blue-400 h-full transition-all"
-                  title={`Sonno Leggero: ${garminSleepLogs[0].light_sleep_minutes} min`}
-                />
-                <div
-                  style={{ width: `${(garminSleepLogs[0].awake_minutes / (garminSleepLogs[0].total_sleep_hours * 60)) * 100}%` }}
-                  className="bg-amber-400 h-full transition-all"
-                  title={`Veglia: ${garminSleepLogs[0].awake_minutes} min`}
-                />
-              </div>
-
-              {/* Legend with duration and bodybuilding impact */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-[11px]">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded bg-indigo-700 shrink-0" />
-                  <span className="text-slate-600">Profondo: <strong>{garminSleepLogs[0].deep_sleep_minutes} min</strong> (GH & Ipertrofia)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded bg-purple-600 shrink-0" />
-                  <span className="text-slate-600">REM: <strong>{garminSleepLogs[0].rem_sleep_minutes} min</strong> (Recupero SNC)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded bg-blue-400 shrink-0" />
-                  <span className="text-slate-600">Leggero: <strong>{garminSleepLogs[0].light_sleep_minutes} min</strong></span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded bg-amber-400 shrink-0" />
-                  <span className="text-slate-600">Veglia: <strong>{garminSleepLogs[0].awake_minutes} min</strong></span>
-                </div>
-              </div>
-            </div>
-
-            {/* Biomarker Badges: HRV & Resting HR */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-200/80 text-xs">
-              <div className="bg-white/80 p-2.5 rounded-xl border border-slate-200">
-                <span className="text-[10px] text-slate-500 uppercase font-bold block">HRV Medio Notturno</span>
-                <span className="text-base font-black text-slate-900 font-mono-tabular">{garminSleepLogs[0].avg_hrv_ms} ms</span>
-                <span className="text-[10px] text-emerald-600 block">SNC pronto per il carico</span>
-              </div>
-              <div className="bg-white/80 p-2.5 rounded-xl border border-slate-200">
-                <span className="text-[10px] text-slate-500 uppercase font-bold block">FC Riposo Notturna</span>
-                <span className="text-base font-black text-slate-900 font-mono-tabular">{garminSleepLogs[0].resting_heart_rate_bpm} bpm</span>
-                <span className="text-[10px] text-slate-500 block">Nessun sovrallenamento</span>
-              </div>
-              <div className="bg-white/80 p-2.5 rounded-xl border border-slate-200">
-                <span className="text-[10px] text-slate-500 uppercase font-bold block">Efficienza del Sonno</span>
-                <span className="text-base font-black text-blue-900 font-mono-tabular">{garminSleepLogs[0].sleep_efficiency_pct}%</span>
-                <span className="text-[10px] text-blue-600 block">Continuità circadiana</span>
-              </div>
-              <div className="bg-white/80 p-2.5 rounded-xl border border-slate-200">
-                <span className="text-[10px] text-slate-500 uppercase font-bold block">Ore di Sonno Reali</span>
-                <span className="text-base font-black text-indigo-900 font-mono-tabular">{garminSleepLogs[0].total_sleep_hours} h</span>
-                <span className="text-[10px] text-emerald-600 block">Target &gt; 8h centrato</span>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* 3b. Curva Peso Corporeo & Volume di Allenamento nel Macrociclo */}
+      <MacrocycleWeightVolumeChart
+        initialWeightKg={displayInitialWeight}
+        currentWeightKg={displayCurrentWeight}
+      />
 
       {/* 4. Tabella Storica Aggregata ISO (Mobile Optimized UI/UX) */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">

@@ -80,6 +80,28 @@ export function scanForPromptInjection(text: string): PromptInjectionScanResult 
 }
 
 /**
+ * Sanitizes free-text user input (e.g., Community Q&A threads/replies, coach feedback, onboarding answers)
+ * against XSS (<script>, on*=, javascript:) and prompt injection payloads.
+ */
+export function sanitizeUserInput(input: string): string {
+  if (!input) return '';
+  let cleaned = input
+    // Strip script/style/iframe tags and contents
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, '')
+    .replace(/<iframe[\s\S]*?>[\s\S]*?<\/iframe>/gi, '')
+    // Strip remaining HTML tags
+    .replace(/<\/?[^>]+(>|$)/g, '')
+    // Strip inline event handlers and javascript: protocol
+    .replace(/\bon\w+\s*=\s*(['"]).*?\1/gi, '')
+    .replace(/javascript\s*:/gi, '')
+    .replace(/data\s*:\s*text\/html/gi, '');
+
+  const scan = scanForPromptInjection(cleaned);
+  return scan.sanitizedText.trim();
+}
+
+/**
  * Strips EXIF & GPS metadata from image files using HTML5 Canvas client-side
  * Complies with TC-SEC-03 & GDPR Art. 9 privacy.
  */
