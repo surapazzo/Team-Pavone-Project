@@ -48,7 +48,7 @@ export const PrivacyGdprView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 pb-24 lg:pb-8 space-y-6 sm:space-y-8 min-w-0">
       {/* Top Header */}
       <div>
         <div className="text-xs font-bold uppercase tracking-wider text-purple-700">

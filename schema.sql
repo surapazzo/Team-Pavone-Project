@@ -376,6 +376,8 @@ CREATE TABLE IF NOT EXISTS nutrition_satiety_logs (
 
 CREATE TABLE IF NOT EXISTS recipes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  author_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  is_official BOOLEAN NOT NULL DEFAULT TRUE,
   title VARCHAR(150) NOT NULL,
   category VARCHAR(20) NOT NULL CHECK (category IN ('Breakfast', 'Lunch', 'Dinner', 'Snack')),
   prep_time_min INT NOT NULL,
@@ -387,7 +389,9 @@ CREATE TABLE IF NOT EXISTS recipes (
   ingredients JSONB DEFAULT '[]'::jsonb,
   instructions TEXT NOT NULL,
   storage_tips TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  image_url TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- ============================================================================

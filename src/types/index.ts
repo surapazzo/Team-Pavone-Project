@@ -44,13 +44,89 @@ export interface ThemeConfig {
   updated_at: string;
 }
 
+export interface LandingNavLink {
+  id: string;
+  label: string;
+  href: string;
+  visible: boolean;
+}
+
+export interface LandingHeroMetric {
+  id: string;
+  value: string;
+  label: string;
+}
+
+export type LandingPillarIconName =
+  | 'FileSpreadsheet'
+  | 'Dumbbell'
+  | 'CheckCircle2'
+  | 'ShieldCheck'
+  | 'Clock'
+  | 'Flame'
+  | 'Target'
+  | 'HeartPulse'
+  | 'Sparkles'
+  | 'Award'
+  | 'Calendar'
+  | 'Utensils';
+
+export type LandingPillarAccent = 'purple' | 'indigo' | 'emerald' | 'rose' | 'amber' | 'slate';
+
+export interface LandingPillarCard {
+  id: string;
+  title: string;
+  description: string;
+  footer_note: string;
+  media_type: 'ICON' | 'IMAGE';
+  icon_name: LandingPillarIconName;
+  image_url?: string;
+  accent_color: LandingPillarAccent;
+}
+
 export interface LandingContent {
+  // 1. Navbar & Brand Controls
+  nav_links: LandingNavLink[];
+  nav_onboarding_label: string;
+  nav_login_label: string;
+  nav_app_label: string;
+  nav_public_site_label: string;
+
+  // 2. Hero Section
+  hero_badge: string;
   hero_title: string;
   hero_subtitle: string;
+  hero_primary_cta_text: string;
   hero_cta_text: string;
-  coach_bio: string;
   hero_image_url?: string;
+  hero_image_caption_kicker: string;
+  hero_image_caption_title: string;
+  hero_metrics: LandingHeroMetric[];
+
+  // 3. Method / Operational Pillars Section
+  method_visible: boolean;
+  method_kicker: string;
+  method_title: string;
+  method_subtitle: string;
+  method_cards: LandingPillarCard[];
+
+  // 4. Coach & Staff Team Section
+  coach_role_label: string;
+  coach_method_tag: string;
+  coach_name: string;
+  coach_bio: string;
   coach_portrait_url?: string;
+  staff_visible: boolean;
+  staff_role_label: string;
+  staff_name: string;
+  staff_subtitle: string;
+  staff_bio: string;
+  staff_portrait_url?: string;
+
+  // 5. Announcements Section
+  announcements_visible: boolean;
+  announcements_kicker: string;
+  announcements_title: string;
   announcements: Array<{
     id: string;
     title: string;
@@ -58,6 +134,13 @@ export interface LandingContent {
     date: string;
     published: boolean;
   }>;
+
+  // 6. Testimonials / Transformations Section
+  testimonials_visible: boolean;
+  testimonials_kicker: string;
+  testimonials_title: string;
+  testimonials_subtitle: string;
+  testimonials_badge_label: string;
   testimonials: Array<{
     id: string;
     athlete_name: string;
@@ -65,6 +148,21 @@ export interface LandingContent {
     before_after_url?: string;
     change_metric?: string;
   }>;
+
+  // 7. Contact / Application Form & Footer
+  contact_visible: boolean;
+  contact_kicker: string;
+  contact_title: string;
+  contact_subtitle: string;
+  contact_submit_text: string;
+  contact_success_title: string;
+  contact_success_body: string;
+  contact_reset_button_text: string;
+  footer_copyright_note: string;
+  footer_cookie_label: string;
+  footer_privacy_label: string;
+  footer_login_label: string;
+  footer_portal_label: string;
 }
 
 export interface UserProfile {
@@ -584,6 +682,12 @@ export interface RecipeItem {
   steps_en: string;
   storage_tip_it: string;
   storage_tip_en: string;
+  author_id?: string;
+  author_name?: string;
+  author_role?: UserRole;
+  is_official?: boolean;
+  image_url?: string;
+  updated_at?: string;
 }
 
 // ============================================================================

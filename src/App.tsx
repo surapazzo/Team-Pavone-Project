@@ -113,7 +113,7 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+    <div className="min-h-screen w-full max-w-full overflow-x-clip bg-slate-950 text-slate-100 flex flex-col">
       {/* Sidebar for /app/* routes */}
       {isAppRoute && (
         <Sidebar
@@ -124,7 +124,7 @@ const AppContent: React.FC = () => {
       )}
 
       {/* Main Column */}
-      <div className={`flex-1 flex flex-col min-w-0 ${isAppRoute ? 'lg:pl-72' : ''}`}>
+      <div className={`flex-1 flex flex-col min-w-0 w-full ${isAppRoute ? 'lg:pl-72' : ''}`}>
         {/* Top Navbar */}
         <Navbar
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -132,7 +132,7 @@ const AppContent: React.FC = () => {
         />
 
         {/* Content Body: light background for dashboard/app views for contrast, dark for landing */}
-        <main className={`flex-1 ${isAppRoute ? 'bg-slate-50 text-slate-900' : 'bg-slate-950 text-slate-100'}`}>
+        <main className={`flex-1 min-w-0 w-full ${isAppRoute ? 'bg-slate-50 text-slate-900' : 'bg-slate-950 text-slate-100'}`}>
           {renderRoute()}
         </main>
       </div>

@@ -35,6 +35,7 @@ import {
   QaTopic,
   HungerSatietyTarget,
   MealSatietyLog,
+  RecipeItem,
   HabitItem,
   HabitDailyLog,
   OnboardingApplication,
@@ -65,6 +66,7 @@ import {
   INITIAL_QA_THREADS,
   INITIAL_HUNGER_TARGETS,
   INITIAL_SATIETY_LOGS,
+  CORE_RECIPES_DATABASE,
   INITIAL_HABITS,
   INITIAL_HABIT_LOGS,
   INITIAL_ONBOARDING_APPLICATIONS,
@@ -174,12 +176,17 @@ interface AppContextType {
   replyToQaThread: (threadId: string, body: string) => void;
   togglePinQaThread: (threadId: string) => void;
 
-  // MODULE 4 & 5: Nutrition Targets, Hunger/Satiety Logger
+  // MODULE 4 & 5: Nutrition Targets, Hunger/Satiety Logger & Dynamic Recipes
   hungerTargets: HungerSatietyTarget[];
   updateHungerTarget: (mealType: 'MAIN_MEAL' | 'SNACK', pre: number, post: number) => void;
   satietyLogs: MealSatietyLog[];
   logPreMealHunger: (mealLabel: string, mealType: 'MAIN_MEAL' | 'SNACK', hungerScore: number) => void;
   logPostMealSatiety: (logId: string, satietyScore: number) => void;
+  recipes: RecipeItem[];
+  addRecipe: (recipe: Omit<RecipeItem, 'id' | 'updated_at'>) => RecipeItem;
+  updateRecipe: (id: string, updated: Partial<RecipeItem>) => void;
+  deleteRecipe: (id: string) => void;
+  bulkImportRecipes: (items: Array<Omit<RecipeItem, 'id' | 'updated_at'>>) => { addedCount: number; updatedCount: number };
 
   // MODULE 6: Habits & Evening Reflection
   habits: HabitItem[];
@@ -249,23 +256,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return INITIAL_THEME;
   });
 
-  // Landing CMS Content with teampavone.com assets
+  // Landing CMS Content with teampavone.com assets & full macro-component defaults
   const [landingContent, setLandingContent] = useState<LandingContent>(() => {
     const saved = localStorage.getItem('ttp_landing_content');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // Migrate stale or unsplash placeholders to authentic teampavone.com photos
-        if (!parsed.hero_image_url || parsed.hero_image_url.includes('unsplash')) {
-          parsed.hero_image_url = INITIAL_LANDING_CONTENT.hero_image_url;
+        const merged: LandingContent = {
+          ...INITIAL_LANDING_CONTENT,
+          ...parsed,
+          nav_links: Array.isArray(parsed.nav_links) && parsed.nav_links.length > 0 ? parsed.nav_links : INITIAL_LANDING_CONTENT.nav_links,
+          hero_metrics: Array.isArray(parsed.hero_metrics) && parsed.hero_metrics.length > 0 ? parsed.hero_metrics : INITIAL_LANDING_CONTENT.hero_metrics,
+          method_cards: Array.isArray(parsed.method_cards) && parsed.method_cards.length > 0 ? parsed.method_cards : INITIAL_LANDING_CONTENT.method_cards,
+        };
+        if (!merged.hero_image_url || merged.hero_image_url.includes('unsplash')) {
+          merged.hero_image_url = INITIAL_LANDING_CONTENT.hero_image_url;
         }
-        if (!parsed.coach_portrait_url || parsed.coach_portrait_url.includes('unsplash')) {
-          parsed.coach_portrait_url = INITIAL_LANDING_CONTENT.coach_portrait_url;
+        if (!merged.coach_portrait_url || merged.coach_portrait_url.includes('unsplash')) {
+          merged.coach_portrait_url = INITIAL_LANDING_CONTENT.coach_portrait_url;
         }
-        if (!parsed.testimonials || parsed.testimonials.length < 6 || (parsed.testimonials[0]?.before_after_url && parsed.testimonials[0].before_after_url.includes('unsplash'))) {
-          parsed.testimonials = INITIAL_LANDING_CONTENT.testimonials;
+        if (!merged.testimonials || merged.testimonials.length === 0 || (merged.testimonials[0]?.before_after_url && merged.testimonials[0].before_after_url.includes('unsplash'))) {
+          merged.testimonials = INITIAL_LANDING_CONTENT.testimonials;
         }
-        return parsed;
+        return merged;
       } catch {
         return INITIAL_LANDING_CONTENT;
       }
@@ -470,6 +483,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [satietyLogs, setSatietyLogs] = useState<MealSatietyLog[]>(() => {
     const saved = localStorage.getItem('ttp_satiety_logs');
     return saved ? JSON.parse(saved) : INITIAL_SATIETY_LOGS;
+  });
+
+  const [recipes, setRecipes] = useState<RecipeItem[]>(() => {
+    const normalizeSeed = (list: RecipeItem[]) =>
+      list.map((r) => ({
+        ...r,
+        author_id: r.author_id || COACH_USER.id,
+        author_name: r.author_name || COACH_USER.full_name,
+        author_role: r.author_role || 'COACH',
+        is_official: r.is_official !== undefined ? r.is_official : true,
+      }));
+    const saved = localStorage.getItem('ttp_recipes');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return normalizeSeed(parsed);
+        }
+      } catch {
+        // fallback to core seed database
+      }
+    }
+    return normalizeSeed(CORE_RECIPES_DATABASE);
   });
 
   const [habits, setHabits] = useState<HabitItem[]>(() => {
@@ -1231,6 +1267,153 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const addRecipe = (recipe: Omit<RecipeItem, 'id' | 'updated_at'>): RecipeItem => {
+    const newRecipe: RecipeItem = {
+      ...recipe,
+      id: `rec-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      title_it: sanitizeUserInput(recipe.title_it),
+      title_en: sanitizeUserInput(recipe.title_en || recipe.title_it),
+      ingredients_it: recipe.ingredients_it.map((i) => sanitizeUserInput(i)).filter(Boolean),
+      ingredients_en: (recipe.ingredients_en.length > 0 ? recipe.ingredients_en : recipe.ingredients_it)
+        .map((i) => sanitizeUserInput(i))
+        .filter(Boolean),
+      steps_it: sanitizeUserInput(recipe.steps_it),
+      steps_en: sanitizeUserInput(recipe.steps_en || recipe.steps_it),
+      storage_tip_it: sanitizeUserInput(recipe.storage_tip_it),
+      storage_tip_en: sanitizeUserInput(recipe.storage_tip_en || recipe.storage_tip_it),
+      author_id: currentUser.id,
+      author_name: currentUser.full_name,
+      author_role: currentUser.role,
+      is_official: currentUser.role === 'COACH',
+      updated_at: new Date().toISOString(),
+    };
+    setRecipes((prev) => {
+      const updated = [newRecipe, ...prev];
+      localStorage.setItem('ttp_recipes', JSON.stringify(updated));
+      return updated;
+    });
+    addAuditLog('RECIPE_CREATED', 'INFO', {
+      title: newRecipe.title_it,
+      meal_type: newRecipe.meal_type,
+      is_official: newRecipe.is_official,
+    });
+    return newRecipe;
+  };
+
+  const updateRecipe = (id: string, updatedFields: Partial<RecipeItem>) => {
+    setRecipes((prev) => {
+      const updated = prev.map((r) => {
+        if (r.id !== id) return r;
+        const canEdit = currentUser.role === 'COACH' || r.author_id === currentUser.id;
+        if (!canEdit) return r;
+        return {
+          ...r,
+          ...updatedFields,
+          title_it: updatedFields.title_it !== undefined ? sanitizeUserInput(updatedFields.title_it) : r.title_it,
+          title_en: updatedFields.title_en !== undefined ? sanitizeUserInput(updatedFields.title_en) : r.title_en,
+          ingredients_it: updatedFields.ingredients_it
+            ? updatedFields.ingredients_it.map((i) => sanitizeUserInput(i)).filter(Boolean)
+            : r.ingredients_it,
+          ingredients_en: updatedFields.ingredients_en
+            ? updatedFields.ingredients_en.map((i) => sanitizeUserInput(i)).filter(Boolean)
+            : r.ingredients_en,
+          steps_it: updatedFields.steps_it !== undefined ? sanitizeUserInput(updatedFields.steps_it) : r.steps_it,
+          steps_en: updatedFields.steps_en !== undefined ? sanitizeUserInput(updatedFields.steps_en) : r.steps_en,
+          storage_tip_it:
+            updatedFields.storage_tip_it !== undefined
+              ? sanitizeUserInput(updatedFields.storage_tip_it)
+              : r.storage_tip_it,
+          storage_tip_en:
+            updatedFields.storage_tip_en !== undefined
+              ? sanitizeUserInput(updatedFields.storage_tip_en)
+              : r.storage_tip_en,
+          updated_at: new Date().toISOString(),
+        };
+      });
+      localStorage.setItem('ttp_recipes', JSON.stringify(updated));
+      return updated;
+    });
+    addAuditLog('RECIPE_UPDATED', 'INFO', { id });
+  };
+
+  const deleteRecipe = (id: string) => {
+    setRecipes((prev) => {
+      const target = prev.find((r) => r.id === id);
+      if (!target) return prev;
+      if (currentUser.role !== 'COACH' && target.author_id !== currentUser.id) return prev;
+      const filtered = prev.filter((r) => r.id !== id);
+      localStorage.setItem('ttp_recipes', JSON.stringify(filtered));
+      return filtered;
+    });
+    addAuditLog('RECIPE_DELETED', 'INFO', { id });
+  };
+
+  const bulkImportRecipes = (
+    items: Array<Omit<RecipeItem, 'id' | 'updated_at'>>
+  ): { addedCount: number; updatedCount: number } => {
+    let addedCount = 0;
+    let updatedCount = 0;
+    const nowIso = new Date().toISOString();
+
+    setRecipes((prev) => {
+      const copy = [...prev];
+      items.forEach((raw, idx) => {
+        const cleanTitleIt = sanitizeUserInput(raw.title_it);
+        if (!cleanTitleIt) return;
+        const cleanPayload: Omit<RecipeItem, 'id'> = {
+          ...raw,
+          title_it: cleanTitleIt,
+          title_en: sanitizeUserInput(raw.title_en || cleanTitleIt),
+          ingredients_it: raw.ingredients_it.map((i) => sanitizeUserInput(i)).filter(Boolean),
+          ingredients_en: (raw.ingredients_en.length > 0 ? raw.ingredients_en : raw.ingredients_it)
+            .map((i) => sanitizeUserInput(i))
+            .filter(Boolean),
+          steps_it: sanitizeUserInput(raw.steps_it),
+          steps_en: sanitizeUserInput(raw.steps_en || raw.steps_it),
+          storage_tip_it: sanitizeUserInput(raw.storage_tip_it),
+          storage_tip_en: sanitizeUserInput(raw.storage_tip_en || raw.storage_tip_it),
+          author_id: currentUser.id,
+          author_name: currentUser.full_name,
+          author_role: currentUser.role,
+          is_official: currentUser.role === 'COACH',
+          updated_at: nowIso,
+        };
+
+        const existingIdx = copy.findIndex(
+          (existing) =>
+            existing.title_it.toLowerCase().trim() === cleanTitleIt.toLowerCase().trim() &&
+            (currentUser.role === 'COACH' || existing.author_id === currentUser.id)
+        );
+
+        if (existingIdx >= 0) {
+          copy[existingIdx] = {
+            ...copy[existingIdx],
+            ...cleanPayload,
+            id: copy[existingIdx].id,
+          };
+          updatedCount++;
+        } else {
+          copy.unshift({
+            ...cleanPayload,
+            id: `rec-bulk-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 5)}`,
+          });
+          addedCount++;
+        }
+      });
+      localStorage.setItem('ttp_recipes', JSON.stringify(copy));
+      return copy;
+    });
+
+    addAuditLog('RECIPES_BULK_IMPORTED', 'INFO', {
+      total: items.length,
+      addedCount,
+      updatedCount,
+      role: currentUser.role,
+    });
+
+    return { addedCount, updatedCount };
+  };
+
   const addHabitItem = (
     titleIt: string,
     titleEn: string,
@@ -1495,6 +1678,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         satietyLogs,
         logPreMealHunger,
         logPostMealSatiety,
+        recipes,
+        addRecipe,
+        updateRecipe,
+        deleteRecipe,
+        bulkImportRecipes,
         habits,
         habitLogs,
         addHabitItem,

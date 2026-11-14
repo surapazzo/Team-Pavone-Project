@@ -35,14 +35,106 @@ export const INITIAL_THEME: ThemeConfig = {
 };
 
 export const INITIAL_LANDING_CONTENT: LandingContent = {
+  // 1. Navbar & Brand Controls
+  nav_links: [
+    { id: 'nav-metodo', label: 'Il Metodo', href: '#metodo', visible: true },
+    { id: 'nav-annunci', label: 'Bacheca Annunci', href: '#annunci', visible: true },
+    { id: 'nav-trasformazioni', label: 'Trasformazioni', href: '#trasformazioni', visible: true },
+    { id: 'nav-contatti', label: 'Candidatura Coaching', href: '#contatti', visible: true },
+  ],
+  nav_onboarding_label: 'Inizia Questionario',
+  nav_login_label: 'Accedi',
+  nav_app_label: 'App',
+  nav_public_site_label: 'Sito Pubblico',
+
+  // 2. Hero Section
+  hero_badge: 'Programmazione Scientifica di Bodybuilding Natural',
   hero_title: 'Team Pavone · Scienza, Metodo e Risultati Misurabili nel Bodybuilding',
   hero_subtitle:
     'L\'ecosistema di coaching di Francesco Pavone che digitalizza, blinda e automatizza la tua trasformazione fisica. Periodizzazione avanzata, Workout Logger biomeccanico e check-in approfonditi.',
+  hero_primary_cta_text: 'Inizia Questionario (Entry €19 / VIP)',
   hero_cta_text: 'Accedi all\'Area Riservata',
   hero_image_url: '/assets/images/teampavone/hero_trasformazioni.png',
+  hero_image_caption_kicker: 'Overload Progressivo Controllato',
+  hero_image_caption_title: 'Tensione Meccanica & RIR 1-2',
+  hero_metrics: [
+    { id: 'hm-1', value: '-0.8%', label: 'Target Perdita/Settimana' },
+    { id: 'hm-2', value: '7 Aree', label: 'Check-In & DOMS' },
+    { id: 'hm-3', value: '16 Ricette', label: 'Porzioni a Mano & Sazietà' },
+  ],
+
+  // 3. Method / Operational Pillars Section
+  method_visible: true,
+  method_kicker: 'Ingegneria della Composizione Corporea',
+  method_title: 'I 4 Pilastri Operativi di Francesco Pavone',
+  method_subtitle:
+    'Il coaching non è un foglio statico di esercizi: è un ciclo continuo di misurazione dei carichi, percezione dello sforzo, nutrizione a porzioni e abitudini quotidiane.',
+  method_cards: [
+    {
+      id: 'pillar-1',
+      title: 'Macrociclo & Fasi 12+ Settimane',
+      description:
+        'Periodizzazione a blocchi tra Tensione Meccanica, Ipertrofia Sarcoplasmatica, AMPK e Deload. Ciclizzazione glucidica millimetrica tra giorni ON e OFF.',
+      footer_note: 'Algoritmo Benchmark % Attivo',
+      media_type: 'ICON',
+      icon_name: 'FileSpreadsheet',
+      image_url: '/assets/images/teampavone/hero_trasformazioni.png',
+      accent_color: 'purple',
+    },
+    {
+      id: 'pillar-2',
+      title: 'Workout Logger & Analytics DOMS',
+      description:
+        'Tracking mobile di serie, kg, RIR, durata sessione e profilo di resistenza (Lengthened / Mid / Shortened), con pop-up DOMS mattutino e celebri PR automatici.',
+      footer_note: 'Tonnellaggio & e1RM in Tempo Reale',
+      media_type: 'ICON',
+      icon_name: 'Dumbbell',
+      image_url: '/assets/images/teampavone/francesco_stage.jpg',
+      accent_color: 'indigo',
+    },
+    {
+      id: 'pillar-3',
+      title: 'Check-In Guidato in 7 Aree',
+      description:
+        'Media peso mobile a 7gg, foto progresso con EXIF/GPS rimossi, parametri su sonno, digestione, fame e video feedback d\'esecuzione per correggere ogni alzata.',
+      footer_note: 'Sondaggio Mobile-First',
+      media_type: 'ICON',
+      icon_name: 'Clock',
+      image_url: '/assets/images/teampavone/trasformazione_1.png',
+      accent_color: 'emerald',
+    },
+    {
+      id: 'pillar-4',
+      title: 'GDPR Art. 9 & Sicurezza',
+      description:
+        'Consenso esplicito sui dati sanitari, cancellazione totale 1-Click (Diritto all\'Oblio), export dati in JSON/CSV e storage crittografato privato con Signed URLs temporanei.',
+      footer_note: 'Conforme GDPR al 100%',
+      media_type: 'ICON',
+      icon_name: 'ShieldCheck',
+      image_url: '/assets/images/teampavone/francesco_pavone_wnbf.jpg',
+      accent_color: 'rose',
+    },
+  ],
+
+  // 4. Coach & Staff Team Section
+  coach_role_label: 'Head Coach & Fondatore',
+  coach_method_tag: 'Metodologia Pavone',
+  coach_name: 'Francesco Pavone',
   coach_portrait_url: '/assets/images/teampavone/francesco_pavone_wnbf.jpg',
   coach_bio:
     'Francesco Pavone è preparatore atletico e atleta agonista di natural bodybuilding WNBF. Fondatore del Team Pavone (teampavone.com), il suo metodo combina fisiologia applicata, sovraccarico progressivo controllato, analisi dei profili di resistenza, gestione millimetrica dei macronutrienti con porzioni visive e monitoraggio continuo del sonno e del recupero.',
+  staff_visible: true,
+  staff_role_label: 'Staff Tecnico',
+  staff_name: 'Daniele',
+  staff_subtitle: 'Coach Collaboratore Team Pavone',
+  staff_bio:
+    'Affianca Francesco nella supervisione dei check-in settimanali, nell\'analisi dei video esecutivi e nella gestione dei parametri atletici per il roster agonisti e amatori.',
+  staff_portrait_url: '/assets/images/teampavone/daniele_coach.jpg',
+
+  // 5. Announcements Section
+  announcements_visible: true,
+  announcements_kicker: 'Aggiornamenti per gli Atleti',
+  announcements_title: 'Bacheca Comunicazioni & Articoli',
   announcements: [
     {
       id: 'ann-1',
@@ -66,6 +158,14 @@ export const INITIAL_LANDING_CONTENT: LandingContent = {
       published: true,
     },
   ],
+
+  // 6. Testimonials / Transformations Section
+  testimonials_visible: true,
+  testimonials_kicker: 'Evidenza Scientifica dei Risultati',
+  testimonials_title: 'Cambiamenti Fisici Tracciati e Certificati',
+  testimonials_subtitle:
+    'Fotografie con stripping EXIF, dati di peso registrati a media mobile 7gg e aderenza nutrizionale documentata.',
+  testimonials_badge_label: 'Atleta Team Pavone',
   testimonials: [
     {
       id: 'test-1',
@@ -110,6 +210,23 @@ export const INITIAL_LANDING_CONTENT: LandingContent = {
       before_after_url: '/assets/images/teampavone/trasformazione_6.jpg',
     },
   ],
+
+  // 7. Contact / Application Form & Footer
+  contact_visible: true,
+  contact_kicker: 'Selezione Roster Atleti',
+  contact_title: 'Candidatura Coaching con Francesco Pavone',
+  contact_subtitle:
+    'Compila il modulo per inviare i tuoi parametri a Francesco e valutare la disponibilità di inserimento nel team.',
+  contact_submit_text: 'Invia Candidatura a Francesco Pavone',
+  contact_success_title: 'Candidatura Inviata',
+  contact_success_body:
+    'La tua richiesta è stata registrata nei log di sistema. Francesco o uno dei collaboratori del team analizzerà il tuo storico sportivo entro 48 ore.',
+  contact_reset_button_text: 'Invia un\'altra richiesta',
+  footer_copyright_note: 'Francesco Pavone Coaching Ecosystem.',
+  footer_cookie_label: 'Preferenze Cookie',
+  footer_privacy_label: 'Privacy Policy & GDPR',
+  footer_login_label: 'Accedi',
+  footer_portal_label: 'Area Clienti',
 };
 
 export const COACH_USER: UserProfile = {

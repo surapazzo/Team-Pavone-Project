@@ -220,48 +220,52 @@ export const CoachTrainingAnalytics: React.FC = () => {
       {/* Charts Grid */}
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Resistance Profile Bias & Joint Type Pies */}
-        <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3">
+        <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3 min-w-0 overflow-hidden">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
             Distribuzione Profilo Resistenza & Tipologia Articolare
           </h3>
-          <div className="grid grid-cols-2 gap-2 h-52">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={analytics.profilePieData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={60}
-                  label={({ name, percent }) => `${name} ${Math.round((percent || 0) * 100)}%`}
-                >
-                  {analytics.profilePieData.map((_, i) => (
-                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="h-52 w-full min-w-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={analytics.profilePieData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="45%"
+                    outerRadius={54}
+                  >
+                    {analytics.profilePieData.map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend wrapperStyle={{ fontSize: '10px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
 
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={analytics.jointPieData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={60}
-                  label={({ name, percent }) => `${name} ${Math.round((percent || 0) * 100)}%`}
-                >
-                  {analytics.jointPieData.map((_, i) => (
-                    <Cell key={i} fill={JOINT_COLORS[i % JOINT_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="h-52 w-full min-w-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={analytics.jointPieData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="45%"
+                    outerRadius={54}
+                  >
+                    {analytics.jointPieData.map((_, i) => (
+                      <Cell key={i} fill={JOINT_COLORS[i % JOINT_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend wrapperStyle={{ fontSize: '10px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 

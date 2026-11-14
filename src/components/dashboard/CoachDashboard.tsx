@@ -74,14 +74,14 @@ export const CoachDashboard: React.FC = () => {
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 pb-24 lg:pb-8 space-y-6 sm:space-y-8 min-w-0">
       {/* 1. Top Bar: Athlete Switcher & Coach Command Center */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 text-white p-6 rounded-2xl shadow-sm">
-        <div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 text-white p-5 sm:p-6 rounded-2xl shadow-sm">
+        <div className="min-w-0">
           <div className="text-xs font-bold uppercase tracking-wider text-purple-400">
             Console Head Coach
           </div>
-          <h1 className="text-2xl font-black">
+          <h1 className="text-xl sm:text-2xl font-black">
             Panoramica CX & Gestione Team Pavone
           </h1>
           <p className="text-xs text-slate-400 mt-1">
@@ -90,7 +90,7 @@ export const CoachDashboard: React.FC = () => {
         </div>
 
         {/* Quick Search Athlete */}
-        <div className="relative min-w-[280px]">
+        <div className="relative w-full md:w-72 shrink-0">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"
@@ -376,7 +376,7 @@ export const CoachDashboard: React.FC = () => {
                         placeholder="https://calendly.com/teampavone/discovery"
                         value={callLinks[app.id] || ''}
                         onChange={(e) => setCallLinks({ ...callLinks, [app.id]: e.target.value })}
-                        className="px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs w-56"
+                        className="px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs w-full sm:w-56"
                       />
                       <button
                         type="button"
